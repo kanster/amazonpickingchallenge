@@ -1,16 +1,10 @@
 #How to build uts recogniser?
 * External dependencies installation
-* pr_msgs for communication
 
 - - -
 #How to run uts recogniser?
-Two kinds of sensors are involved in uts recogniser: a rgb camera 
-and a rgbd sensor such as Kinect and Xtion.
+Two kinds of sensors are involved in uts recogniser: a rgb camera(firewire camera in this case) 
+and a rgbd sensor such as Kinect and Xtion. Start the two sensors before running this package.
 
-    roscore
-    rosrun uvc_camera uvc_camera_node 
-    roslaunch openni_launch openni.launch
-
-You can test the code using `<pseudo_target`>
-
+You can test the code using `pseudo_target` which sends pseudo request to the `uts_recogniser`
 
