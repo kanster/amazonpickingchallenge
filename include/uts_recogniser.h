@@ -46,8 +46,10 @@
 
 using namespace std;
 
+#define WINDOW_NAME "objwindow"
 
 class UTSRecogniser{
+
 private:
     // recognition method
     typedef enum{RGBD_RECOG, RGB_RECOG} RecogMethod;

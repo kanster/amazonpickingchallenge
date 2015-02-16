@@ -77,7 +77,7 @@ int main( int argc, char ** argv ) {
         else {
             ROS_ERROR( "Target object: %s, failed to call service target_object", target_srv.request.ObjectName.c_str() );
         }
-        ms_sleep(1000L);
+        ms_sleep(50L);
     }
     return 0;
 }

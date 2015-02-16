@@ -59,6 +59,9 @@ UTSRecogniser::UTSRecogniser(ros::NodeHandle &nh)
     ROS_INFO( "subscribing to topic %s", camera_rgb_topic_.c_str());
     camera_rgb_info_topic_ = nh.resolveName( "/camera/camera_info" );
     ROS_INFO( "subscribing to topic %s", camera_rgb_info_topic_.c_str());
+
+    //Open a window to display the image
+    cv::namedWindow(WINDOW_NAME);
 }
 
 // desctructor
@@ -67,6 +70,9 @@ UTSRecogniser::~UTSRecogniser() {
     sensor_cond_.notify_all();
     process_thread_.interrupt();
     process_thread_.join();
+
+    //Remove the window to display the image
+    cv::destroyWindow(WINDOW_NAME);
 }
 
 
@@ -120,8 +126,7 @@ void UTSRecogniser::sensor_callback( const sensor_msgs::ImageConstPtr & rgb_imag
     icap = image_captured_;
     srvc_mutex_.unlock();
 //  std::cout <<"sensor callback" << "\n";
-    if (!lrecg && !icap)
-    {
+    if (!lrecg && !icap) {
         if (debug_)
             ROS_INFO("No %d  target object with name %s", target_count_, target_item_.target_name.c_str());
         SensorData* data = &sensor_data_;
@@ -161,8 +166,7 @@ bool UTSRecogniser::target_srv_callback(uts_recogniser::TargetRequest::Request &
         ROS_INFO_ONCE("[target_srv_callback] target item request received");
 //  std::cout << "target_srv_callback stage 1 :" << recogniser_done_ << "\n";
     srvc_mutex_.lock();
-    if(recogniser_done_)
-    {
+    if(recogniser_done_) {
 //      std::cout << "target_srv_callback stage 2" << "\n";
         recogniser_done_ = false;
         image_captured_ = false;
@@ -172,8 +176,7 @@ bool UTSRecogniser::target_srv_callback(uts_recogniser::TargetRequest::Request &
         target_count_ ++;
         srvc_mutex_.unlock();
     }
-    else
-    {
+    else {
         srvc_mutex_.unlock();
     }
     return true;
@@ -225,8 +228,7 @@ void UTSRecogniser::process() {
     while ( !exit_flag_ ) {
         {
             boost::mutex::scoped_lock lock(sensor_mutex_);
-            while(sensor_empty_)
-            {
+            while(sensor_empty_) {
                 sensor_cond_.wait( lock );
             }
 
@@ -243,8 +245,8 @@ void UTSRecogniser::process() {
             cv::minMaxIdx(data->xtion_depth_ptr->image, &min, &max);
             cv::convertScaleAbs(data->xtion_depth_ptr->image, data->xtion_depth_ptr->image, 255/max);
 
-            usleep(5000000);
-
+            cv::imshow(WINDOW_NAME, data->camera_rgb_ptr->image);
+            cv::waitKey( 1);
             srvc_mutex_.lock();
             recogniser_done_ = true;
             srvc_mutex_.unlock();

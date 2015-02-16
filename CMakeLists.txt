@@ -9,6 +9,10 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 
+rosbuild_find_ros_package(actionlib_msgs)
+include(${actionlib_msgs_PACKAGE_PATH}/cmake/actionbuild.cmake)
+genaction()
+
 rosbuild_init()
 rosbuild_gensrv()
 rosbuild_genmsg()
@@ -22,6 +26,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/dependencies/")
 set( ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CMAKE_SOURCE_DIR}/dependencies/" )
+
 
 
 find_package(PkgConfig REQUIRED)
@@ -129,11 +134,11 @@ set( SOURCE_CPP
     ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp
     ${PROJECT_SOURCE_DIR}/src/rgb_recogniser.cpp
     ${PROJECT_SOURCE_DIR}/src/rgbd_recogniser.cpp
-    ${PROJECT_SOURCE_DIR}/src/main.cpp
 )
 
 rosbuild_add_boost_directories()
-rosbuild_add_executable(${PROJECT_NAME} ${SOURCE_CPP} ${SOURCE_H})
+
+rosbuild_add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/main.cpp ${SOURCE_CPP} ${SOURCE_H})
 rosbuild_link_boost(${PROJECT_NAME} thread system filesystem program_options signals )
 target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${SIFTFAST_LIBRARIES} ${V4R_LIBRARIES} )
 target_link_libraries(${PROJECT_NAME}
@@ -141,8 +146,9 @@ target_link_libraries(${PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/dependencies/liblevmar.a
 )
 
+
 rosbuild_add_executable( pseudo_request src/pseudo_request.cpp )
 
-rosbuild_add_executable(thread_test test/multi_reader_single_writer.cpp)
-rosbuild_link_boost(thread_test thread system filesystem program_options signals )
+#rosbuild_add_executable(thread_test test/multi_reader_single_writer.cpp)
+#rosbuild_link_boost(thread_test thread system filesystem program_options signals )
 
