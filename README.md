@@ -6,5 +6,5 @@
 Two kinds of sensors are involved in uts recogniser: a rgb camera(firewire camera in this case) 
 and a rgbd sensor such as Kinect and Xtion. Start the two sensors before running this package.
 
-You can test the code using `pseudo_target` which sends pseudo request to the `uts_recogniser`
+You can test the code using `pseudo_request` which sends pseudo request to the `uts_recogniser`
 

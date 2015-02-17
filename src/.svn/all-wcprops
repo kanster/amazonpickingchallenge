@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/projects/cas/CAS/svn/!svn/ver/3599/photogrammetry/projects/kanzhi/amazon_picking_challenge/src
+END
+utils.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/projects/cas/CAS/svn/!svn/ver/3612/photogrammetry/projects/kanzhi/amazon_picking_challenge/src/utils.cpp
+END
+feature_detector.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/projects/cas/CAS/svn/!svn/ver/3612/photogrammetry/projects/kanzhi/amazon_picking_challenge/src/feature_detector.cpp
+END
+pseudo_request.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/projects/cas/CAS/svn/!svn/ver/3607/photogrammetry/projects/kanzhi/amazon_picking_challenge/src/pseudo_request.cpp
+END
+svd_pose_estimator.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/projects/cas/CAS/svn/!svn/ver/3612/photogrammetry/projects/kanzhi/amazon_picking_challenge/src/svd_pose_estimator.cpp
+END
+rgb_recogniser.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/projects/cas/CAS/svn/!svn/ver/3612/photogrammetry/projects/kanzhi/amazon_picking_challenge/src/rgb_recogniser.cpp
+END
+uts_recogniser.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/projects/cas/CAS/svn/!svn/ver/3612/photogrammetry/projects/kanzhi/amazon_picking_challenge/src/uts_recogniser.cpp
+END
+feature_cluster.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/projects/cas/CAS/svn/!svn/ver/3612/photogrammetry/projects/kanzhi/amazon_picking_challenge/src/feature_cluster.cpp
+END
+feature_matcher.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/projects/cas/CAS/svn/!svn/ver/3612/photogrammetry/projects/kanzhi/amazon_picking_challenge/src/feature_matcher.cpp
+END
+rgbd_recogniser.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/projects/cas/CAS/svn/!svn/ver/3612/photogrammetry/projects/kanzhi/amazon_picking_challenge/src/rgbd_recogniser.cpp
+END

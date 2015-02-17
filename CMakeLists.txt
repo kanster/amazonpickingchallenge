@@ -65,15 +65,6 @@ if(PCL_FOUND)
     add_definitions(${PCL_DEFINITIONS})
 endif()
 
-
-pkg_check_modules(V4R REQUIRED v4r)
-set( V4R_LIBRARIES "-lv4rSegmenterLight -lv4rTomGine")
-message ( "== V4R LIBS REQUIRED ${V4R_LIBRARIES}")
-message ( "== V4R INCLUDE DIRS ${V4R_INCLUDE_DIRS}")
-include_directories( ${V4R_INCLUDE_DIRS} )
-message ( "== V4R LIB DIRS ${V4R_LIBRARY_DIRS}")
-link_directories( ${V4R_LIBRARY_DIRS} )
-
 pkg_check_modules(FLANN REQUIRED flann)
 set( FLANN_LIBRARIES "-lflann_cpp")
 message ( "== FLANN LIBS REQUIRED ${FLANN_LIBRARIES}")
@@ -114,7 +105,6 @@ set( SOURCE_H
     ${PROJECT_SOURCE_DIR}/include/levmar_pose_estimator.h
     ${PROJECT_SOURCE_DIR}/include/projection_filter.h
     ${PROJECT_SOURCE_DIR}/include/mask_generator.h
-    ${PROJECT_SOURCE_DIR}/include/cloud_segmenter.h
     ${PROJECT_SOURCE_DIR}/include/svd_pose_estimator.h
     ${PROJECT_SOURCE_DIR}/include/uts_recogniser.h
     ${PROJECT_SOURCE_DIR}/include/rgb_recogniser.h
@@ -129,7 +119,6 @@ set( SOURCE_CPP
     ${PROJECT_SOURCE_DIR}/src/levmar_pose_estimator.cpp
     ${PROJECT_SOURCE_DIR}/src/projection_filter.cpp
     ${PROJECT_SOURCE_DIR}/src/mask_generator.cpp
-    ${PROJECT_SOURCE_DIR}/src/cloud_segmenter.cpp
     ${PROJECT_SOURCE_DIR}/src/svd_pose_estimator.cpp
     ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp
     ${PROJECT_SOURCE_DIR}/src/rgb_recogniser.cpp
@@ -140,7 +129,7 @@ rosbuild_add_boost_directories()
 
 rosbuild_add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/main.cpp ${SOURCE_CPP} ${SOURCE_H})
 rosbuild_link_boost(${PROJECT_NAME} thread system filesystem program_options signals )
-target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${SIFTFAST_LIBRARIES} ${V4R_LIBRARIES} )
+target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${SIFTFAST_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/dependencies/libANN.a
     ${CMAKE_SOURCE_DIR}/dependencies/liblevmar.a

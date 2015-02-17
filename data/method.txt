@@ -1,0 +1,10 @@
+# object_name method
+belvita_honey rgb
+belvita_milk rgb
+fruity_bites rgbd
+moroccan_beef rgb
+oldel_paso rgb
+oreo rgb
+sanitarium rgbd
+sultana_bran rgbd
+yoghurt_topps rgb
