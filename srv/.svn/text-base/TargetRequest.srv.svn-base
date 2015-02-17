@@ -1,5 +1,0 @@
-string ObjectName
-int8 ObjectIndex
-int8[] RemovedObjectIndices
----
-bool Found
