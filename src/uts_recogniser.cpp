@@ -15,19 +15,19 @@
 #include <boost/algorithm/string/split.hpp>
 
 // firewire rgb topics
-const string g_camera_rgb_name  = "/camera/image_color";
-const string g_camera_info      = "/camera/camera_info";
+//const string g_camera_rgb_name  = "/camera/image_color";
+//const string g_camera_info      = "/camera/camera_info";
 
 // xtion rgb topics
-const string g_xtion_rgb_name   = "/camera/rgb/image_color";
-const string g_xtion_rgb_info   = "/camera/rgb/camera_info";
+//const string g_xtion_rgb_name   = "/camera/rgb/image_color";
+//const string g_xtion_rgb_info   = "/camera/rgb/camera_info";
 
 // xtion depth topics
-const string g_xtion_depth_name = "/camera/depth/image_raw";
-const string g_xtion_depth_info = "/camera/depth/camera_info";
+//const string g_xtion_depth_name = "/camera/depth/image_raw";
+//const string g_xtion_depth_info = "/camera/depth/camera_info";
 
 // xtion cloud topics
-const string g_xtion_cloud_name = "/camera/depth/points";
+//const string g_xtion_cloud_name = "/camera/depth/points";
 
 // service server name
 const string g_target_srv_name  = "/target_object_srv";
@@ -219,7 +219,7 @@ void UTSRecogniser::process() {
             cv::convertScaleAbs(data->xtion_depth_ptr->image, data->xtion_depth_ptr->image, 255/max);
 
             // recognition
-            /*
+            
             switch ( reco_method_ ) {
             case RGB_RECOG:
             {
@@ -241,7 +241,7 @@ void UTSRecogniser::process() {
             default:
                 break;
             }
-            */
+            
 
             imshow_data_ptr_ = data;
             cindex_ = (++cindex_)%2;
