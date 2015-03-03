@@ -2,8 +2,6 @@
 #define UTILS_H
 
 //#include "siftfast/siftfast.h"
-#include <pcl/surface/on_nurbs/sequential_fitter.h>
-#include "v4r/SegmenterLight/SegmenterLight.h"
 #include "include/ANN/ANN.h"
 
 // system
@@ -26,10 +24,6 @@
 #include <pcl/console/time.h>
 #include <pcl/common/common_headers.h>
 #include <pcl_conversions/pcl_conversions.h>
-
-// for test pcl surface
-#include <pcl/surface/on_nurbs/sequential_fitter.h>
-#include <v4r/SegmenterLight/SegmenterLight.h>
 
 // eigen
 #include <eigen3/Eigen/Dense>

@@ -33,10 +33,10 @@ const string g_xtion_cloud_name = "/camera/depth/points";
 const string g_target_srv_name  = "/target_object_srv";
 
 // json configuration file
-const string g_json_filename    = "../data/uts.json";
+const string g_json_filename    = "../data/amazon.json";
 
 // object models, xml
-const string g_models_dir       = "../data/object_models/";
+const string g_models_dir       = "../data/amazon_models/";
 
 // rgbd segmenter model
 const string g_seg_model_dir    = "../data/seg_models/";
@@ -219,6 +219,7 @@ void UTSRecogniser::process() {
             cv::convertScaleAbs(data->xtion_depth_ptr->image, data->xtion_depth_ptr->image, 255/max);
 
             // recognition
+            /*
             switch ( reco_method_ ) {
             case RGB_RECOG:
             {
@@ -240,6 +241,7 @@ void UTSRecogniser::process() {
             default:
                 break;
             }
+            */
 
             imshow_data_ptr_ = data;
             cindex_ = (++cindex_)%2;

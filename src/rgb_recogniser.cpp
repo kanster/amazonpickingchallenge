@@ -1,5 +1,6 @@
 #include "include/rgb_recogniser.h"
-
+#include <boost/timer.hpp>
+#include <boost/progress.hpp>
 
 /** constructor with image copier */
 RGBRecogniser::RGBRecogniser(cv::Mat rgb_image) {
@@ -38,10 +39,14 @@ void RGBRecogniser::load_models( string models_dir ) {
 
     // load all models in directory
     for ( size_t i = 0; i < target_bin_content_.size(); ++ i ) {
-        string content_object_path = models_dir_ + "/" + target_bin_content_[i] + ".xml";
-        SP_Model m( new Model );
-        m->load_model( content_object_path );
-        this->models_.push_back( m );
+        {
+            boost::timer t;
+            string content_object_path = models_dir_ + "/" + target_bin_content_[i] + ".xml";
+            SP_Model m( new Model );
+            m->load_model( content_object_path );
+            this->models_.push_back( m );
+            pcl::console::print_value( "Load model %s takes %f s\n", target_bin_content_[i].c_str(), t.elapsed() );
+        }
     }
 }
 

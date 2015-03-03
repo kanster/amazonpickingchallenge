@@ -10,7 +10,7 @@
 using namespace std;
 
 // json configuration file
-const string g_json_filename    = "../data/uts.json";
+const string g_json_filename    = "../data/amazon.json";
 
 
 int ms_sleep( unsigned long ms ) {
@@ -63,6 +63,19 @@ int main( int argc, char ** argv ) {
         "sanitarium",
         "sultana_bran",
         "yoghurt_topps"
+    };
+
+    string tmp_names[] = {
+        "dr_browns_bottle_rush",
+        "expo_dry_erase_board_eraser",
+        "genuine_joe_plastic_stir_sticks",
+        "highland_6539_self_stick_notes",
+        "laugh_out_loud_joke_book",
+        "mark_twain_huckleberry_finn",
+        "mead_index_cards",
+        "mommys_helper_outlet_plugs",
+        "paper_mate_12_count_mirado_black_warrior",
+        "stanley_66_052"
     };
 
     // parse json files
