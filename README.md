@@ -6,8 +6,8 @@
 #How to run the package?
 * **Hardware configuration** An RGB-D sensor and an RGB sensor need to be correctly connected. Only Kinect is tested now. In order to get a reliable pose estimation results, both sensor needs to calibrated.
 * **Configuration**
-> * *Topic name* go to `src/uts_recogniser.cpp` and set the correct topics you want to subscribe include rgb image, depth image and point cloud from RGB-D sensor and rgb image from RGB sensor.
-> * *JSON* the `json` file is in `data` folder using the same format given by Amazon Picking Challenge organiser
-> * *method* in `data` folder, `method.txt` represents the correct(most optimal) method for different item
+  * *Topic name* go to `src/uts_recogniser.cpp` and set the correct topics you want to subscribe include rgb image, depth image and point cloud from RGB-D sensor and rgb image from RGB sensor.
+  * *JSON* the `json` file is in `data` folder using the same format given by Amazon Picking Challenge organiser
+  * *method* in `data` folder, `method.txt` represents the correct(most optimal) method for different item
 * **Run**
 Start `pseudo_request` to send pseudo request for the target items and run `uts_recogniser` to start recognition process
