@@ -1,0 +1,25 @@
+<package>
+  <description brief="data_publisher">
+
+     data_publisher
+
+  </description>
+  <author>kanzhi</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/data_publisher</url>
+  <depend package="std_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="message_filters"/>
+  <depend package="opencv2"/>
+  <depend package="image_geometry"/>
+  <depend package="pcl_ros"/>
+  <depend package="pcl_conversions"/>
+  <depend package="cv_bridge"/>
+
+</package>
+
+
