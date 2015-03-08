@@ -1,6 +1,6 @@
 #include "include/json_parser.hpp"
 
-#include "srv_gen/cpp/include/uts_recogniser/TargetRequest.h"
+#include <apc_msgs/TargetRequest.h>
 
 #include <ros/ros.h>
 #include <iostream>
@@ -89,8 +89,8 @@ int main( int argc, char ** argv ) {
 
     ros::init(argc, argv, "pseudo_request");
     ros::NodeHandle nh;
-    ros::ServiceClient client = nh.serviceClient<uts_recogniser::TargetRequest>("target_object_srv");
-    uts_recogniser::TargetRequest target_srv;
+    ros::ServiceClient client = nh.serviceClient<apc_msgs::TargetRequest>("target_object_srv");
+    apc_msgs::TargetRequest target_srv;
     int random_index;
 
     while ( ros::ok() ) {

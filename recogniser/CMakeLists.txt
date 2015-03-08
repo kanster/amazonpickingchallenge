@@ -9,6 +9,10 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 #set(ROS_BUILD_TYPE RelWithDebInfo)
 
+#rosbuild_find_ros_package(actionlib_msgs)
+#include(${actionlib_msgs_PACKAGE_PATH}/cmake/actionbuild.cmake)
+#genaction()
+
 rosbuild_init()
 rosbuild_gensrv()
 rosbuild_genmsg()
@@ -78,6 +82,22 @@ if(PCL_FOUND)
     add_definitions(${PCL_DEFINITIONS})
 endif()
 
+#pkg_check_modules(FLANN REQUIRED flann)
+#set( FLANN_LIBRARIES "-lflann_cpp")
+#message ( "== FLANN LIBS REQUIRED ${FLANN_LIBRARIES}")
+#message ( "== FLANN INCLUDE DIRS ${FLANN_INCLUDE_DIRS}")
+#include_directories( ${FLANN_INCLUDE_DIRS} )
+#message ( "== FLANN LIB DIRS ${FLANN_LIBRARY_DIRS}")
+#link_directories( ${FLANN_LIBRARY_DIRS} )
+
+#pkg_check_modules(SIFTFAST REQUIRED siftfast)
+#set( SIFTFAST_LIBRARIES "-lsiftfast" )
+#message ( "== SIFTFAST LIBS REQUIRED ${SIFTFAST_LIBRARIES}" )
+#message ( "== SIFTFAST INCLUDE DIRS ${SIFTFAST_INCLUDE_DIRS}")
+#include_directories( ${SIFTFAST_INCLUDE_DIRS} )
+#message ( "== SIFTFAST LIB DIRS ${SIFTFAST_LIBRARY_DIRS}")
+#link_directories( ${SIFTFAST_LIBRARY_DIRS} )
+
 
 find_package(OpenCV 2.4 REQUIRED)
 if(OpenCV_FOUND)
@@ -98,7 +118,6 @@ set( SOURCE_H
     ${PROJECT_SOURCE_DIR}/include/projection_filter.h
     ${PROJECT_SOURCE_DIR}/include/mask_generator.h
     ${PROJECT_SOURCE_DIR}/include/svd_pose_estimator.h
-    ${PROJECT_SOURCE_DIR}/include/uts_recogniser.h
     ${PROJECT_SOURCE_DIR}/include/rgb_recogniser.h
     ${PROJECT_SOURCE_DIR}/include/rgbd_recogniser.h
 )
@@ -112,14 +131,19 @@ set( SOURCE_CPP
     ${PROJECT_SOURCE_DIR}/src/projection_filter.cpp
     ${PROJECT_SOURCE_DIR}/src/mask_generator.cpp
     ${PROJECT_SOURCE_DIR}/src/svd_pose_estimator.cpp
-    ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp
     ${PROJECT_SOURCE_DIR}/src/rgb_recogniser.cpp
     ${PROJECT_SOURCE_DIR}/src/rgbd_recogniser.cpp
 )
 
 rosbuild_add_boost_directories()
 
-rosbuild_add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/main.cpp ${SOURCE_CPP} ${SOURCE_H})
+rosbuild_add_executable(${PROJECT_NAME}
+                        ${PROJECT_SOURCE_DIR}/src/main.cpp
+                        ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp
+                        ${PROJECT_SOURCE_DIR}/include/uts_recogniser.h
+                        ${SOURCE_CPP}
+                        ${SOURCE_H})
+
 rosbuild_link_boost(${PROJECT_NAME} thread system filesystem program_options signals )
 target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 target_link_libraries(${PROJECT_NAME}
@@ -128,9 +152,33 @@ target_link_libraries(${PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/dependencies/libsiftfast.a
 )
 
+rosbuild_add_executable(${PROJECT_NAME}
+                        ${PROJECT_SOURCE_DIR}/src/offline_recogniser.cpp
+                        ${PROJECT_SOURCE_DIR}/include/offline_recogniser.h
+                        ${SOURCE_CPP}
+                        ${SOURCE_H})
 
-rosbuild_add_executable( pseudo_request src/pseudo_request.cpp )
+rosbuild_link_boost(${PROJECT_NAME} thread system filesystem program_options signals )
+target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+    ${CMAKE_SOURCE_DIR}/dependencies/libANN.a
+    ${CMAKE_SOURCE_DIR}/dependencies/liblevmar.a
+    ${CMAKE_SOURCE_DIR}/dependencies/libsiftfast.a
+)
 
+#rosbuild_add_executable( pseudo_request src/pseudo_request.cpp )
+
+#set(CALIB_H
+#  ${PROJECT_SOURCE_DIR}/include/system_calibrator.h
+#)
+
+#set(CALIB_CPP
+#  ${PROJECT_SOURCE_DIR}/src/system_calibrator.cpp
+#)
+
+#rosbuild_add_executable(calibrator ${CALIB_H} ${CALIB_CPP})
+#rosbuild_link_boost(calibrator thread system filesystem program_options signals )
+#target_link_libraries(calibrator ${PCL_LIBRARIES} ${OpenCV_LIBS})
 #rosbuild_add_executable(thread_test test/multi_reader_single_writer.cpp)
 #rosbuild_link_boost(thread_test thread system filesystem program_options signals )
 

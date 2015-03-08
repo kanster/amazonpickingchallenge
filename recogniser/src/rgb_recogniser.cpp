@@ -8,6 +8,11 @@ RGBRecogniser::RGBRecogniser(cv::Mat rgb_image) {
 }
 
 
+RGBRecogniser::RGBRecogniser(cv::Mat rgb_image, cv::Mat mask_image) {
+    rgb_image_  = rgb_image.clone();
+    mask_image_ = mask_image.clone();
+}
+
 /** set target item related variables */
 void RGBRecogniser::set_env_configuration(int idx, vector<pair<string, string> > work_order, map<string, vector<string> > bin_contents) {
     target_idx_ = idx;
@@ -79,14 +84,18 @@ void RGBRecogniser::filter_objects() {
 
 
 /** main process */
-void RGBRecogniser::run( bool visualise ) {
+bool RGBRecogniser::run( int min_matches, int min_filtered_matches, bool visualise ) {
+    // add mask image into feature detector
     FeatureDetector feature_detector( "sift" );
-    this->detected_features_ = feature_detector.process( this->rgb_image_ );
+    this->detected_features_ = feature_detector.process( this->rgb_image_, this->mask_image_ );
 
 
     FeatureMatcher feature_matcher( 5.0, 0.8, 128, "sift" );
     feature_matcher.load_models( this->models_ );
     this->matches_ = feature_matcher.process( this->detected_features_, target_in_bin_ );
+    if ( (int)this->matches_.size() < min_matches ) {
+        return false;
+    }
 
 
     FeatureCluster feature_cluster( 200, 20, 7, 100 );
@@ -99,6 +108,10 @@ void RGBRecogniser::run( bool visualise ) {
     ProjectionFilter projection_filter_1;
     projection_filter_1.init_params( 5, (float)4096., 2, params_ );
     projection_filter_1.process( (this->models_)[target_in_bin_], this->matches_, this->clusters_, this->objects_ );
+
+    if ( (int)this->matches_.size() < min_filtered_matches ) {
+        return false;
+    }
 
     LevmarPoseEstimator levmar_estimator_2;
     levmar_estimator_2.init_params( 100, 500, 4, 6, 8, 5, params_ );
@@ -115,7 +128,6 @@ void RGBRecogniser::run( bool visualise ) {
         pcl::console::print_highlight( "Recognise %s with translation [%f, %f, %f] and score %f\n", object->model_->name_.c_str(), object->pose_.t_.x(), object->pose_.t_.y(), object->pose_.t_.z(), object->score_ );
     }
     cout << "\n-----------------------------------------\n";
-
     // visualisation
     if ( visualise == true ) {
         display_features( this->rgb_image_, this->detected_features_ );
@@ -123,5 +135,16 @@ void RGBRecogniser::run( bool visualise ) {
         display_clusters( this->rgb_image_, this->matches_, this->clusters_ );
         display_pose( this->rgb_image_, this->objects_, this->params_ );
     }
+
+    if ( !this->objects_.empty() )
+        return true;
+    else
+        return false;
+}
+
+
+/** read recognition results */
+list<SP_Object> RGBRecogniser::get_objects() {
+    return this->objects_;
 }
 

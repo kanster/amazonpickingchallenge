@@ -10,6 +10,17 @@ RGBDRecogniser::RGBDRecogniser(cv::Mat rgb_image, cv::Mat depth_image, pcl::Poin
     seg_model_dir_ = seg_model_dir;
 }
 
+/** constructor, load sensor data */
+RGBDRecogniser::RGBDRecogniser(cv::Mat rgb_image, cv::Mat mask_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, string seg_model_dir) {
+    rgb_image_      = rgb_image;
+    mask_image_     = mask_image;
+    depth_image_    = depth_image;
+    cloud_.reset( new pcl::PointCloud<pcl::PointXYZRGB>() );
+    cloud_ = cloud;
+    seg_model_dir_ = seg_model_dir;
+}
+
+
 /** set configuration work order and bin settings */
 void RGBDRecogniser::set_env_configuration(int idx, vector<pair<string, string> > work_order, map<string, vector<string> > bin_contents) {
     target_idx_ = idx;
@@ -69,9 +80,9 @@ void RGBDRecogniser::filter_objects() {
 
 
 /** run */
-void RGBDRecogniser::run( bool visualise ) {
-    MaskGenerator mask_generator( true );
-    this->mask_image_ = mask_generator.process( this->cloud_ );
+bool RGBDRecogniser::run( bool visualise ) {
+    MaskGenerator mask_generator;
+    this->mask_image_ = mask_generator.process( this->cloud_, this->mask_image_ );
 
     FeatureDetector feature_detector( "sift" );
     this->detected_features_ = feature_detector.process( this->rgb_image_, this->cloud_, this->mask_image_ );
@@ -86,6 +97,8 @@ void RGBDRecogniser::run( bool visualise ) {
     SVDPoseEstimator svd_pose_estimator( 0.5, 7 ); // cm
     this->objects_ = svd_pose_estimator.process( this->matches_, this->models_[target_in_bin_], this->clusters_ );
 
+    if ( !this->objects_.empty() )
+        return false;
     cout << "\n-----------------------------------------\n";
     foreach( object, this->objects_ ) {
         pcl::console::print_highlight( "Recognise %s with translation [%f, %f, %f] and score %f\n", object->model_->name_.c_str(), object->pose_.t_.x(), object->pose_.t_.y(), object->pose_.t_.z(), object->score_ );
@@ -99,4 +112,11 @@ void RGBDRecogniser::run( bool visualise ) {
         display_clusters( this->rgb_image_, this->matches_, this->clusters_ );
         display_pose( this->rgb_image_, this->objects_, this->params_ );
     }
+
+    return true;
+}
+
+
+list<SP_Object> RGBDRecogniser::get_objects() {
+    return this->objects_;
 }

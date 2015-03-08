@@ -1,5 +1,5 @@
-#ifndef UTS_RECOGNISER_H
-#define UTS_RECOGNISER_H
+#ifndef OFFLINE_RECOGNISER_H
+#define OFFLINE_RECOGNISER_H
 
 #include "include/json_parser.hpp"
 #include "include/rgbd_recogniser.h"
@@ -24,11 +24,14 @@
 #include <std_msgs/Int8.h>
 #include <std_msgs/String.h>
 
+#include "apc_msgs/ObjectPose.h"
+#include "apc_msgs/ObjectPoseList.h"
 
-#include "apc_msgs/Enable.h"
-#include "apc_msgs/TargetRequest.h"
-#include "apc_msgs/BinsIndices.h"
+#include "apc_msgs/Object.h"
+#include "apc_msgs/BinObjects.h"
+#include "apc_msgs/RowBinObjects.h"
 
+#include "apc_msgs/DataPublish.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
@@ -49,7 +52,7 @@ using namespace std;
 
 #define WINDOW_NAME "objwindow"
 
-class UTSRecogniser{
+class OfflineRecogniser{
 
 private:
     // recognition method
@@ -89,15 +92,15 @@ private:
     // methods for all working order item
     struct Item{
         string object_name;
-        RecogMethod method;
+        string method;
     };
 
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     // constructor and destructor
-    UTSRecogniser( ros::NodeHandle & nh );
-    ~UTSRecogniser();
+    OfflineRecogniser( ros::NodeHandle & nh );
+    ~OfflineRecogniser();
 
     // main processing function
     void start_monitor( void );
@@ -112,14 +115,12 @@ public:
                           const sensor_msgs::CameraInfoConstPtr & camera_image_info );
 
     // target service callback
-//    bool target_srv_callback( apc_msgs::TargetRequest::Request & req,
-//                              apc_msgs::TargetRequest::Response & resp);
-
-    bool target_srv_callback( apc_msgs::BinsIndices::Request & req,
-                              apc_msgs::BinsIndices::Response & resp);
+    bool target_srv_callback( uts_recogniser::TargetRequest::Request & req,
+                              uts_recogniser::TargetRequest::Response & resp);
 
 
 private:
+
     // function
     // recogniser main function of processing
     void process();
@@ -159,19 +160,18 @@ private:
     message_filters::Subscriber<sensor_msgs::CameraInfo>    camera_rgb_info_sub_;
 
     // buffer data and mutex
-    SensorData  sensor_data_;
-    SensorData *sensor_data_ptr_;
-    SensorData *imshow_data_ptr_;
-    SensorData  d_buf_[2];
-    unsigned int cindex_;
+    SensorData sensor_data_;
+
+    SensorData  *sensor_data_ptr_;
+    SensorData dBuf[2];
+    SensorData  *imshow_data_ptr_;
+    unsigned int cindex;
 
     bool        sensor_empty_;
     boost::mutex sensor_mutex_;
     boost::condition_variable sensor_cond_;
 
     // unique lock
-    vector<string> target_bins_name_;
-
     TargetItem  target_item_;
     bool        target_received_;
     bool        image_captured_;
@@ -190,13 +190,13 @@ private:
     vector< pair<string, string> > work_order_;
 
     // methods configuration file
-    map<string, RecogMethod> methods_; // 1 -> object name, 2 -> method
+    map<string, string> methods_; // 1 -> object name, 2 -> method
 
     // object name and methods
     vector<Item> items_;
 
     // Recognition method
-    RecogMethod reco_method_;
+    string reco_method_;
 
     boost::thread process_thread_;
 
@@ -208,4 +208,4 @@ private:
 };
 
 
-#endif // UTS_RECOGNISER_H
+#endif // OFFLINE_RECOGNISER_H

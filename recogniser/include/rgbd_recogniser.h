@@ -97,6 +97,9 @@ public:
     /** constructor */
     RGBDRecogniser( cv::Mat rgb_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, string seg_model_dir );
 
+    /** constructor with mask image */
+    RGBDRecogniser( cv::Mat rgb_image, cv::Mat mask_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, string seg_model_dir );
+
     void load_models( string models_dir );
 
     /** set target item related variables */
@@ -105,7 +108,9 @@ public:
     /** set camera parameters */
     void set_camera_params( float fx, float fy, float cx, float cy );
 
-    void run( bool visualise );
+    bool run( bool visualise );
+
+    list<SP_Object> get_objects();
 
 };
 

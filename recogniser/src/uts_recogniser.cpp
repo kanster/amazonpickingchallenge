@@ -1,5 +1,12 @@
 #include "include/uts_recogniser.h"
 
+#include "apc_msgs/ObjectPose.h"
+#include "apc_msgs/ObjectPoseList.h"
+
+#include "apc_msgs/Object.h"
+#include "apc_msgs/BinObjects.h"
+#include "apc_msgs/RowBinObjects.h"
+
 #include <boost/bind.hpp>
 #include <unistd.h>
 
@@ -14,20 +21,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-// firewire rgb topics
-//const string g_camera_rgb_name  = "/camera/image_color";
-//const string g_camera_info      = "/camera/camera_info";
 
-// xtion rgb topics
-//const string g_xtion_rgb_name   = "/camera/rgb/image_color";
-//const string g_xtion_rgb_info   = "/camera/rgb/camera_info";
-
-// xtion depth topics
-//const string g_xtion_depth_name = "/camera/depth/image_raw";
-//const string g_xtion_depth_info = "/camera/depth/camera_info";
-
-// xtion cloud topics
-//const string g_xtion_cloud_name = "/camera/depth/points";
+// publish poses topic name
+const string g_object_topic_name = "/object_poses";
 
 // service server name
 const string g_target_srv_name  = "/target_object_srv";
@@ -73,10 +69,7 @@ UTSRecogniser::UTSRecogniser(ros::NodeHandle &nh)
     for ( int i = 0; i < (int)work_order_.size(); ++ i ) {
         Item item;
         item.object_name = work_order_[i].second;
-        if ( methods_[item.object_name] == "rgb" )
-            item.method = RGB_RECOG;
-        else if ( methods_[item.object_name] == "rgbd" )
-            item.method = RGBD_RECOG;
+        item.method =  methods_[item.object_name];
         items_.push_back( item );
     }
 
@@ -90,12 +83,16 @@ UTSRecogniser::UTSRecogniser(ros::NodeHandle &nh)
     ROS_INFO( "subscribing to topic %s", xtion_depth_topic_.c_str() );
     xtion_depth_info_topic_ = nh.resolveName( "/camera/depth/camera_info" );
     ROS_INFO( "subscribing to topic %s", xtion_depth_info_topic_.c_str() );
-    xtion_cloud_topic_ = nh.resolveName( "/camera/depth/points" );
+    xtion_cloud_topic_ = nh.resolveName( "/camera/depth_registered/points" );
     ROS_INFO( "subscribing to topic %s", xtion_cloud_topic_.c_str());
     camera_rgb_topic_ = nh.resolveName( "/camera/image_color" );
     ROS_INFO( "subscribing to topic %s", camera_rgb_topic_.c_str());
     camera_rgb_info_topic_ = nh.resolveName( "/camera/camera_info" );
     ROS_INFO( "subscribing to topic %s", camera_rgb_info_topic_.c_str());
+
+    // publish topic
+    recog_pub_ = nh.advertise<apc_msgs::ObjectPoseList>( g_object_topic_name, 100 );
+
 
     //Open a window to display the image
     cv::namedWindow(WINDOW_NAME);
@@ -161,8 +158,8 @@ void UTSRecogniser::sensor_callback( const sensor_msgs::ImageConstPtr & rgb_imag
 
 
 /** callback for target object request */
-
-bool UTSRecogniser::target_srv_callback(uts_recogniser::TargetRequest::Request &req, uts_recogniser::TargetRequest::Response &resp) {
+/*
+bool UTSRecogniser::target_srv_callback(apc_msgs::TargetRequest::Request &req, apc_msgs::TargetRequest::Response &resp) {
     if ( debug_ == true )
         ROS_INFO_ONCE("[target_srv_callback] target item request received");
 //    std::cout << "target_srv_callback stage 1 :" << recogniser_done_ << "\n";
@@ -194,7 +191,42 @@ bool UTSRecogniser::target_srv_callback(uts_recogniser::TargetRequest::Request &
     }
     return true;
 }
+*/
 
+
+/** callback for target bins, new service type @date 04/03/2015 */
+bool UTSRecogniser::target_srv_callback(apc_msgs::BinsIndices::Request &req, apc_msgs::BinsIndices::Response &resp) {
+    if ( debug_ == true )
+        ROS_INFO_ONCE("[target_srv_callback] target item request received");
+    srvc_mutex_.lock();
+    if(recogniser_done_) {
+        // check all the request bins id are within range
+        for ( int i = 0; i < (int)req.indices.size(); ++ i ) {
+            if ( bin_contents_.find(req.indices[i]) == bin_contents_.end() ) {
+                srvc_mutex_.unlock();
+                return false;
+            }
+        }
+        recogniser_done_ = false;
+        image_captured_ = false;
+        // set bin indices
+        for ( int i = 0; i < (int)req.indices.size(); ++ i ) {
+            target_bins_name_.push_back( req.indices[i] );
+            ROS_INFO( "Target bin index %s", target_bins_name_.back().c_str() );
+            cout << "included items: ";
+            vector<string> items_in_bin = bin_contents_[target_bins_name_.back()];
+            for ( int j = 0; j < (int)items_in_bin.size(); ++ j )
+                cout << items_in_bin[j] << " ";
+            cout << "\n";
+        }
+        target_received_ = true;
+        srvc_mutex_.unlock();
+    }
+    else {
+        srvc_mutex_.unlock();
+    }
+    return true;
+}
 
 /** main processing function */
 void UTSRecogniser::process() {
@@ -218,30 +250,100 @@ void UTSRecogniser::process() {
             cv::minMaxIdx(data->xtion_depth_ptr->image, &min, &max);
             cv::convertScaleAbs(data->xtion_depth_ptr->image, data->xtion_depth_ptr->image, 255/max);
 
-            // recognition
-            
-            switch ( reco_method_ ) {
-            case RGB_RECOG:
-            {
-                RGBRecogniser recog( data->camera_rgb_ptr->image );
-                recog.set_env_configuration( target_item_.target_index, work_order_, bin_contents_ );
-                recog.set_camera_params( camera_rgb_model_.fx(), camera_rgb_model_.fy(), camera_rgb_model_.cx(), camera_rgb_model_.cy() );
-                recog.load_models( g_models_dir );
-                recog.run( true );
-                break;
+            // for loop for configuration, read all the items in current bin
+            apc_msgs::RowBinObjects row_bin_objs;
+
+            if ( !target_bins_name_.empty() ) {
+                for ( int i = 0; i < (int)target_bins_name_.size(); ++ i ) {
+                    // publish message
+                    apc_msgs::BinObjects bin_objs;
+                    bin_objs.bin_id = target_bins_name_[i];
+
+                    /** @todo set seq, frame_id and stemp */
+
+
+                    // load mask images
+                    cv::Mat bin_mask_image;
+                    /** @ todo load mask image from disk */
+
+                    vector<string> item_names = bin_contents_[ target_bins_name_[i] ];
+                    for ( int j = 0; j < (int)item_names.size(); ++ j ) {
+//                        apc_msgs::ObjectPose obj;
+                        apc_msgs::Object obj;
+
+                        RecogMethod method = methods_[item_names[j]];
+                        switch( method ){
+                        case RGB_RECOG:
+                        {
+                            RGBRecogniser recog( data->camera_rgb_ptr->image, bin_mask_image );
+                            recog.set_env_configuration( target_item_.target_index, work_order_, bin_contents_ );
+                            recog.set_camera_params( camera_rgb_model_.fx(), camera_rgb_model_.fy(), camera_rgb_model_.cx(), camera_rgb_model_.cy() );
+                            recog.load_models( g_models_dir );
+                            bool recog_success = recog.run(15, 10, true );
+                            if ( recog_success == true ) {
+                                list<SP_Object> recog_results = recog.get_objects();
+                                foreach( object, recog_results ) {
+                                    // object name
+                                    obj.name = object->model_->name_;
+                                    // assign pose
+                                    obj.pose.position.x = object->pose_.t_.x();
+                                    obj.pose.position.y = object->pose_.t_.y();
+                                    obj.pose.position.z = object->pose_.t_.z();
+
+                                    obj.pose.orientation.x = object->pose_.q_.x();
+                                    obj.pose.orientation.y = object->pose_.q_.y();
+                                    obj.pose.orientation.z = object->pose_.q_.z();
+                                    obj.pose.orientation.w = object->pose_.q_.w();
+                                    // confidence score
+                                    obj.mean_quality = object->score_;
+                                    // used points no. is not decided
+
+                                    bin_objs.items_in_bin.push_back( obj );
+                                }
+                            }
+                            break;
+                        }
+                        case RGBD_RECOG:
+                        {
+                            RGBDRecogniser recog( data->xtion_rgb_ptr->image, data->xtion_depth_ptr->image, data->xtion_cloud_ptr, g_seg_model_dir );
+                            recog.set_env_configuration( target_item_.target_index, work_order_, bin_contents_ );
+                            recog.set_camera_params( xtion_rgb_model_.fx(), xtion_rgb_model_.fy(), xtion_rgb_model_.cx(), xtion_rgb_model_.cy() );
+                            recog.load_models( g_models_dir );
+                            bool recog_success = recog.run(true);
+                            if ( recog_success == true ) {
+                                list<SP_Object> recog_results = recog.get_objects();
+                                foreach( object, recog_results ) {
+                                    SP_Object object;
+                                    obj.name = object->model_->name_;
+
+                                    obj.pose.position.x = object->pose_.t_.x();
+                                    obj.pose.position.y = object->pose_.t_.y();
+                                    obj.pose.position.z = object->pose_.t_.z();
+
+                                    obj.pose.orientation.x = object->pose_.q_.x();
+                                    obj.pose.orientation.y = object->pose_.q_.y();
+                                    obj.pose.orientation.z = object->pose_.q_.z();
+                                    obj.pose.orientation.w = object->pose_.q_.w();
+
+                                    obj.mean_quality = object->score_;
+
+                                    bin_objs.items_in_bin.push_back( obj );
+
+                                }
+                            }
+                            break;
+                        }
+                        default:
+                            break;
+                        }
+                    }
+
+                    row_bin_objs.items_in_row.push_back( bin_objs );
+                }
+
             }
-            case RGBD_RECOG:
-            {
-                RGBDRecogniser recog( data->xtion_rgb_ptr->image, data->xtion_depth_ptr->image, data->xtion_cloud_ptr, g_seg_model_dir );
-                recog.set_env_configuration( target_item_.target_index, work_order_, bin_contents_ );
-                recog.set_camera_params( xtion_rgb_model_.fx(), xtion_rgb_model_.fy(), xtion_rgb_model_.cx(), xtion_rgb_model_.cy() );
-                recog.load_models( g_models_dir );
-                recog.run(true);
-            }
-            default:
-                break;
-            }
-            
+
+            recog_pub_.publish( row_bin_objs );
 
             imshow_data_ptr_ = data;
             cindex_ = (++cindex_)%2;
@@ -279,7 +381,10 @@ void UTSRecogniser::load_method_config( string filename ) {
     vector<string> seg_line;
     while ( getline(in, line) ) {
         boost::algorithm::split( seg_line, line, boost::algorithm::is_any_of(" ") );
-        methods_.insert( make_pair(seg_line[0], seg_line[1]) );
+        if ( seg_line[1] == "rgb" )
+            methods_.insert( make_pair(seg_line[0], RGB_RECOG) );
+        else if ( seg_line[1] == "rgbd" )
+            methods_.insert( make_pair(seg_line[0], RGBD_RECOG) );
         ROS_INFO( "Object name %s and method %s ", seg_line[0].c_str(), seg_line[1].c_str());
         seg_line.clear();
     }

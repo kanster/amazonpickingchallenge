@@ -50,6 +50,9 @@ private:
     string models_dir_;
 
     cv::Mat rgb_image_;
+    // mask image
+    cv::Mat mask_image_;
+
     int target_idx_;
 
     Vector4f params_;
@@ -77,6 +80,8 @@ public:
     /** constructor */
     RGBRecogniser( cv::Mat rgb_image );
 
+    RGBRecogniser( cv::Mat rgb_image, cv::Mat mask_image );
+
     void load_models(string models_dir);
 
     /** set target item related variables */
@@ -85,7 +90,10 @@ public:
     /** set camera parameters */
     void set_camera_params( float fx, float fy, float cx, float cy );
 
-    void run( bool visualise );
+
+    bool run( int min_matches, int min_filtered_matches, bool visualise );
+
+    list<SP_Object> get_objects();
 
 };
 
