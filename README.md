@@ -1,7 +1,6 @@
-# amazonpickingchallenge
-Amazon Picking Challenge
+#Amazon Picking Challenge
 
-Development Log:
+##Development Log:
 
   08/03/2015: 
   
@@ -19,5 +18,14 @@ Development Log:
   
     * /xtion/rgb/image
     * /xtion/rgb/camera_info
-  
+    * /xtion/depth/image
+    * /xtion/depth/camera_info
+    * /xtion/depth/points
+    * /camera/image
+    * /camera/camera_info
     
+  Current problem in `data_publisher` is the communication between `data_publisher` and `recogniser`. To be specific, **New frame of data should be published only after the recogniser has finished processing previous frame**.
+  
+  `recogniser` remains the same with online sensor data input
+
+##How to run it?
