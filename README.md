@@ -1,7 +1,7 @@
 # amazonpickingchallenge
 Amazon Picking Challenge
 
-Log:
+Development Log:
 
   08/03/2015: 
   
@@ -15,4 +15,9 @@ Log:
     * rgb image from rgb camera
     * rgb camera info from rgb camera
     
-  `data_publisher`
+  `data_publisher` can publish saved data to specific topics. This is used as the bridge between sensor data and `recogniser`, the topic name are
+  
+    * /xtion/rgb/image
+    * /xtion/rgb/camera_info
+  
+    
