@@ -27,7 +27,7 @@ const string g_models_dir       = "../data/object_models";
 const string g_method_filename  = "../data/method.txt";
 
 // constructor
-OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh)
+OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh, string data_dir)
     : exit_flag_(false)
     , sensor_empty_(true)
     , target_received_(false)
@@ -36,10 +36,11 @@ OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh)
     , image_captured_(true)
     , debug_(true){
     nh_ = & nh;
+    data_dir_ = data_dir;
 
-    cindex = 0;
-    imshow_data_ptr_ = 0;
-    sensor_data_ptr_ = &dBuf[0];
+    // cindex = 0;
+    // imshow_data_ptr_ = 0;
+    sensor_data_ptr_ = &sensor_data_;
 
     // parse json files
     JSON json;
@@ -50,14 +51,6 @@ OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh)
     // load methods for all candidate objects, for amazon picking challenge
     // totally 27 objects, for uts dataset, totally 9 objects
     load_method_config( g_method_filename );
-
-    // set recognition methods for all working order items
-    for ( int i = 0; i < (int)work_order_.size(); ++ i ) {
-        Item item;
-        item.object_name = work_order_[i].second;
-        item.method = methods_[item.object_name];
-        items_.push_back( item );
-    }
 
 
     // resolve topic name
@@ -206,9 +199,79 @@ void OfflineRecogniser::process() {
                 cv::minMaxIdx(data->xtion_depth_ptr->image, &min, &max);
                 cv::convertScaleAbs(data->xtion_depth_ptr->image, data->xtion_depth_ptr->image, 255/max);
 
-//                imshow_data_ptr_ = data;
-//                cindex = (++cindex)%2;
-//                sensor_data_ptr_ = &dBuf[cindex];
+                ROS_INFO("Load mask images with index %d", data_index_);
+                string xtion_rgb_mask_path  = mask_dir_ + "/xtion_rgb_mask_" + boost::lexical_cast<std::string>(data_index_) + ".png";
+                string xtion_depth_mask_path= mask_dir_ + "/xtion_depth_mask_" + boost::lexical_cast<std::string>(data_index_) + ".png";
+                string camera_rgb_mask_path = mask_dir_ + "/camera_rgb_mask_" + boost::lexical_cast<std::string>(data_index_) + ".png";
+                // load mask image
+                cv::Mat xtion_rgb_mask = cv::imread( xtion_rgb_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
+                cv::Mat xtion_depth_mask = cv::imread( xtion_depth_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
+                cv::Mat camera_rgb_mask = cv::imread( camera_rgb_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
+                
+                // foreach item in the bin
+                // generate correspondece between bin id and collected data id
+                string bin_id;  // better method by add constant to generate char
+                switch (data_index_) {
+                case 1:
+                {
+                    bin_id = "bin_A";
+                    break;
+                }
+                case 2:
+                {
+                    bin_id = "bin_B";
+                    break;
+                }
+                default:
+                    break;
+                }
+
+                vector<string> items = bin_contents_[bin_id];
+                for ( int i = 0; i < (int)items.size(); ++ i ) {
+                    apc_msgs::Object obj;
+
+                    string item_name = items[i];
+                    RecogMethod method = methods_[item_name];
+                    switch (method) {
+                    case RGB_RECOG:
+                    {
+                        cv::Mat bin_mask_image = cv::imread( camera_rgb_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
+                        RGBRecogniser recog( data->camera_rgb_ptr->image, bin_mask_image );
+                        recog.set_env_configuration( target_item_.target_index, work_order_, bin_contents_ );
+                        recog.set_camera_params( camera_rgb_model_.fx(), camera_rgb_model_.fy(), camera_rgb_model_.cx(), camera_rgb_model_.cy() );
+                        recog.load_models( g_models_dir );
+                        bool recog_success = recog.run(15, 10, true );
+                        if ( recog_success == true ) {
+                            list<SP_Object> recog_results = recog.get_objects();
+                            foreach( object, recog_results ) {
+                                // object name
+                                obj.name = object->model_->name_;
+                                // assign pose
+                                obj.pose.position.x = object->pose_.t_.x();
+                                obj.pose.position.y = object->pose_.t_.y();
+                                obj.pose.position.z = object->pose_.t_.z();
+
+                                obj.pose.orientation.x = object->pose_.q_.x();
+                                obj.pose.orientation.y = object->pose_.q_.y();
+                                obj.pose.orientation.z = object->pose_.q_.z();
+                                obj.pose.orientation.w = object->pose_.q_.w();
+                                // confidence score
+                                obj.mean_quality = object->score_;
+                                // used points no. is not decided
+
+                                bin_objs.items_in_bin.push_back( obj );
+                            }
+                        }
+                        break;
+                    }
+                    case RGBD_RECOG:
+                    {
+                        break;
+                    }
+                    }
+
+                }
+
 
                 cv::imshow(WINDOW_NAME, data->camera_rgb_ptr->image);
                 cv::waitKey(5);
