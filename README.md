@@ -26,6 +26,17 @@
     
   ~~Current problem in `data_publisher` is the communication between `data_publisher` and `recogniser`. To be specific, **New frame of data should be published only after the recogniser has finished processing previous frame**.~~
   
+  09/03/2015
+  
+  Communication problem between `data_publisher` and `recogniser` is solved.
+  The next frame of sensor data input will only be published if the `recogniser` send a feedback.
+  
+  **todo**
+  
+  Load the mask images and other information in the `recogniser`
+  
+  
+  
   `recogniser` remains the same with online sensor data input
 
 ##How to run it?
