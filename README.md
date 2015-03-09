@@ -24,7 +24,7 @@
     * /camera/image
     * /camera/camera_info
     
-  Current problem in `data_publisher` is the communication between `data_publisher` and `recogniser`. To be specific, **New frame of data should be published only after the recogniser has finished processing previous frame**.
+  ~~Current problem in `data_publisher` is the communication between `data_publisher` and `recogniser`. To be specific, **New frame of data should be published only after the recogniser has finished processing previous frame**.~~
   
   `recogniser` remains the same with online sensor data input
 
