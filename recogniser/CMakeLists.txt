@@ -152,15 +152,15 @@ target_link_libraries(${PROJECT_NAME}
     ${CMAKE_SOURCE_DIR}/dependencies/libsiftfast.a
 )
 
-rosbuild_add_executable(${PROJECT_NAME}
+rosbuild_add_executable(offline_recogniser
                         ${PROJECT_SOURCE_DIR}/src/offline_recogniser.cpp
                         ${PROJECT_SOURCE_DIR}/include/offline_recogniser.h
                         ${SOURCE_CPP}
                         ${SOURCE_H})
 
-rosbuild_link_boost(${PROJECT_NAME} thread system filesystem program_options signals )
-target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-target_link_libraries(${PROJECT_NAME}
+rosbuild_link_boost(offline_recogniser thread system filesystem program_options signals )
+target_link_libraries(offline_recogniser ${PCL_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+target_link_libraries(offline_recogniser
     ${CMAKE_SOURCE_DIR}/dependencies/libANN.a
     ${CMAKE_SOURCE_DIR}/dependencies/liblevmar.a
     ${CMAKE_SOURCE_DIR}/dependencies/libsiftfast.a

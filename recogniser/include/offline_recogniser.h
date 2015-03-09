@@ -73,6 +73,7 @@ private:
         // data from xtion
         cv_bridge::CvImagePtr xtion_rgb_ptr;
         cv_bridge::CvImagePtr xtion_depth_ptr;
+        // PointType is set to be PointXYZRGB in utils.h
         typename pcl::PointCloud<PointType>::Ptr xtion_cloud_ptr;
 
         // data from rgb image
@@ -115,8 +116,8 @@ public:
                           const sensor_msgs::CameraInfoConstPtr & camera_image_info );
 
     // target service callback
-    bool target_srv_callback( uts_recogniser::TargetRequest::Request & req,
-                              uts_recogniser::TargetRequest::Response & resp);
+    bool target_srv_callback( apc_msgs::DataPublish::Request & req,
+                              apc_msgs::DataPublish::Response & resp);
 
 
 private:
@@ -176,18 +177,23 @@ private:
     bool        target_received_;
     bool        image_captured_;
     boost::mutex      srvc_mutex_;
-    int         target_count_;  // id for the request
-    boost::condition_variable target_cond_;
+    boost::condition_variable srvc_cond_;
 
+    int         target_count_;  // id for the request
 
     bool recogniser_done_;      // recogniser is finished
     bool recogniser_success_;   // recogniser is success
+
 
     // configuration file
     // json configuration input
     string json_filename_;
     map< string, vector<string> > bin_contents_;
     vector< pair<string, string> > work_order_;
+
+    // target item index
+    int data_index_;
+
 
     // methods configuration file
     map<string, string> methods_; // 1 -> object name, 2 -> method

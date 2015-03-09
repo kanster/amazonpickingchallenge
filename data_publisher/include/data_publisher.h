@@ -15,6 +15,7 @@
 #ifndef DATA_PUBLISHER_H
 #define DATA_PUBLISHER_H
 
+#include <apc_msgs/DataPublish.h>
 
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -57,6 +58,8 @@ private:
 
     sensor_msgs::Image camera_rgb_msg_;
     sensor_msgs::CameraInfo camera_rgb_info_msg_;
+
+    ros::ServiceClient client_;
 
 public:
     DataPublisher( ros::NodeHandle & nh, std::string dir, int n );

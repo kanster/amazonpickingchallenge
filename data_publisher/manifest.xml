@@ -19,6 +19,7 @@
   <depend package="pcl_ros"/>
   <depend package="pcl_conversions"/>
   <depend package="cv_bridge"/>
+  <depend package="apc_msgs"/>
 
 </package>
 

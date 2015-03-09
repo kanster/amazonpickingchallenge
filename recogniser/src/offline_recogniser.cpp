@@ -15,7 +15,7 @@
 #include <boost/algorithm/string/split.hpp>
 
 // service server name
-const string g_target_srv_name  = "/target_object_srv";
+const string g_target_srv_name  = "/data_publish_srv";
 
 // json configuration file
 const string g_json_filename    = "../data/uts.json";
@@ -93,12 +93,12 @@ OfflineRecogniser::~OfflineRecogniser() {
 
 // sensor callback
 void OfflineRecogniser::sensor_callback( const sensor_msgs::ImageConstPtr & rgb_image_msg,
-                                     const sensor_msgs::CameraInfoConstPtr & rgb_image_info,
-                                     const sensor_msgs::ImageConstPtr & depth_image_msg,
-                                     const sensor_msgs::CameraInfoConstPtr & depth_image_info,
-                                     const sensor_msgs::PointCloud2ConstPtr & cloud_ptr_msg,
-                                     const sensor_msgs::ImageConstPtr & camera_image_msg,
-                                     const sensor_msgs::CameraInfoConstPtr & camera_image_info ) {
+                                         const sensor_msgs::CameraInfoConstPtr & rgb_image_info,
+                                         const sensor_msgs::ImageConstPtr & depth_image_msg,
+                                         const sensor_msgs::CameraInfoConstPtr & depth_image_info,
+                                         const sensor_msgs::PointCloud2ConstPtr & cloud_ptr_msg,
+                                         const sensor_msgs::ImageConstPtr & camera_image_msg,
+                                         const sensor_msgs::CameraInfoConstPtr & camera_image_info ) {
     ROS_INFO_ONCE( "[sensor_callback] Sensor information available" );
 
     bool lrecg, icap;
@@ -107,35 +107,35 @@ void OfflineRecogniser::sensor_callback( const sensor_msgs::ImageConstPtr & rgb_
     lrecg = recogniser_done_;
     icap = image_captured_;
     srvc_mutex_.unlock();
-//  std::cout <<"sensor callback" << "\n";
+
+
+
+    std::cout <<"sensor callback" << "\n";
     if (!lrecg && !icap) {
+        SensorData* data = sensor_data_ptr_;
+        xtion_rgb_model_.fromCameraInfo( rgb_image_info );
+        xtion_depth_model_.fromCameraInfo( depth_image_info );
+        camera_rgb_model_.fromCameraInfo( camera_image_info );
 
-        srvc_mutex_.lock();
-        image_captured_ = true;
-        srvc_mutex_.unlock();
+        // set buffer info
+        data->xtion_rgb_ptr     = cv_bridge::toCvCopy( rgb_image_msg, sensor_msgs::image_encodings::BGR8 );
+        data->xtion_depth_ptr   = cv_bridge::toCvCopy( depth_image_msg, sensor_msgs::image_encodings::TYPE_32FC1 );
+        data->xtion_cloud_ptr   = pcl::PointCloud<pcl::PointXYZRGB>::Ptr( new pcl::PointCloud<pcl::PointXYZRGB>( ));
+        pcl::fromROSMsg( *cloud_ptr_msg, *(data->xtion_cloud_ptr) );
 
+        data->camera_rgb_ptr    = cv_bridge::toCvCopy( camera_image_msg, sensor_msgs::image_encodings::BGR8 );
+//        camera_rgb_model_.rectifyImage( data->camera_rgb_ptr->image, data->camera_rgb_ptr->image );
 
         {
-            cout << "entering image callback\n";
             boost::mutex::scoped_lock lock(sensor_mutex_);
-            SensorData* data = sensor_data_ptr_;
-
-            xtion_rgb_model_.fromCameraInfo( rgb_image_info );
-            xtion_depth_model_.fromCameraInfo( depth_image_info );
-            camera_rgb_model_.fromCameraInfo( camera_image_info );
-
-            // set buffer info
-            data->xtion_rgb_ptr     = cv_bridge::toCvCopy( rgb_image_msg, sensor_msgs::image_encodings::BGR8 );
-            data->xtion_depth_ptr   = cv_bridge::toCvCopy( depth_image_msg, sensor_msgs::image_encodings::TYPE_32FC1 );
-            data->xtion_cloud_ptr   = pcl::PointCloud<pcl::PointXYZRGB>::Ptr( new pcl::PointCloud<pcl::PointXYZRGB>( ));
-            pcl::fromROSMsg( *cloud_ptr_msg, *(data->xtion_cloud_ptr) );
-            data->camera_rgb_ptr    = cv_bridge::toCvCopy( camera_image_msg, sensor_msgs::image_encodings::BGR8 );
-//            camera_rgb_model_.rectifyImage( data->camera_rgb_ptr->image, data->camera_rgb_ptr->image );
             sensor_empty_ = false;
         }
 
         sensor_cond_.notify_one();
-        cout << "exiting image callback\n";
+
+        srvc_mutex_.lock();
+        image_captured_ = true;
+        srvc_mutex_.unlock();
     }
 }
 
@@ -143,38 +143,41 @@ void OfflineRecogniser::sensor_callback( const sensor_msgs::ImageConstPtr & rgb_
 
 /** callback for target object request */
 
-bool OfflineRecogniser::target_srv_callback(uts_recogniser::TargetRequest::Request &req, uts_recogniser::TargetRequest::Response &resp) {
+bool OfflineRecogniser::target_srv_callback(apc_msgs::DataPublish::Request &req,
+                                            apc_msgs::DataPublish::Response &resp) {
     if ( debug_ == true )
         ROS_INFO_ONCE("[target_srv_callback] target item request received");
-//    std::cout << "target_srv_callback stage 1 :" << recogniser_done_ << "\n";
-    srvc_mutex_.lock();
-    if(recogniser_done_) {
-        // add protection guard, check the input object index
-        if ( req.ObjectIndex < work_order_.size() && req.ObjectIndex >= 0 ) {
-//            std::cout << "target_srv_callback stage 2" << "\n";
-            recogniser_done_ = false;
-            image_captured_ = false;
-            target_item_.target_name = req.ObjectName;
-            target_item_.target_index = (int)req.ObjectIndex;
-            for ( int i = 0; i < (int)req.RemovedObjectIndices.size(); ++ i )
-                target_item_.removed_items_indices.push_back((int)req.RemovedObjectIndices[i]);
-            reco_method_ = items_[(int)target_item_.target_index].method;
-            ROS_INFO( "Target name %s with index %d should use %s recognition method", target_item_.target_name.c_str(), (int)target_item_.target_index, reco_method_.c_str() );
 
-            target_received_ = true;
-            target_count_ ++;
-            srvc_mutex_.unlock();
-        }
-        else {
-            srvc_mutex_.unlock();
-            return false;
-        }
+    srvc_mutex_.lock();
+
+    if ( recogniser_done_ ) {
+        ROS_INFO_ONCE("[target_srv_callback] target item request received");
+        // srv index and data on disk
+        recogniser_done_ = false;
+        image_captured_  = false;
+
+        // set data index value
+        data_index_ = req.DataIndex;
+
+        ROS_INFO( "Target image index %d", data_index_ );
+        target_received_ = true;
+        srvc_mutex_.unlock();
     }
     else {
         srvc_mutex_.unlock();
     }
+
+    // adding mutex to wait for processing
+    {
+        boost::mutex::scoped_lock lock( srvc_mutex_ );
+        while ( !recogniser_done_ ) {
+            srvc_cond_.wait( lock );
+        }
+    }
+
     return true;
 }
+
 
 
 /** main processing function */
@@ -190,7 +193,6 @@ void OfflineRecogniser::process() {
 
         {
             cout << "entering processing\n";
-            boost::mutex::scoped_lock lock(sensor_mutex_);
             SensorData * data = sensor_data_ptr_;
 
 
@@ -204,25 +206,29 @@ void OfflineRecogniser::process() {
                 cv::minMaxIdx(data->xtion_depth_ptr->image, &min, &max);
                 cv::convertScaleAbs(data->xtion_depth_ptr->image, data->xtion_depth_ptr->image, 255/max);
 
-                imshow_data_ptr_ = data;
-                cindex = (++cindex)%2;
-                sensor_data_ptr_ = &dBuf[cindex];
+//                imshow_data_ptr_ = data;
+//                cindex = (++cindex)%2;
+//                sensor_data_ptr_ = &dBuf[cindex];
 
-                cv::imshow(WINDOW_NAME, imshow_data_ptr_->camera_rgb_ptr->image);
-                cv::waitKey(25);
+                cv::imshow(WINDOW_NAME, data->camera_rgb_ptr->image);
+                cv::waitKey(5);
 
 
                 srvc_mutex_.lock();
                 recogniser_done_ = true;
                 srvc_mutex_.unlock();
+                srvc_cond_.notify_one();
+
 
                 sensor_mutex_.lock();
                 sensor_empty_ = true;
                 sensor_mutex_.unlock();
+
+
+
             }
         }
 
-        cout << "exiting the processing\n";
         if ( !exit_flag_ ) {
             boost::unique_lock<boost::mutex> sensor_lock( sensor_mutex_ );
             sensor_empty_ = true;
@@ -253,7 +259,6 @@ void OfflineRecogniser::start_monitor( void ) {
     // service target object
     ros::ServiceServer target_srv = nh_->advertiseService( g_target_srv_name, &OfflineRecogniser::target_srv_callback, this );
 
-
     // subscribe to sensors
     xtion_rgb_sub_.subscribe(*nh_, xtion_rgb_topic_, 1 );
     xtion_rgb_info_sub_.subscribe( *nh_, xtion_rgb_info_topic_, 1 );
@@ -283,6 +288,14 @@ void OfflineRecogniser::start_monitor( void ) {
     }
 }
 
+
+int main( int argc, char ** argv ) {
+    ros::init( argc, argv, "offline_recogniser" );
+    ros::NodeHandle nh("~");
+    OfflineRecogniser reco( nh );
+    reco.start_monitor();
+    return 0;
+}
 
 
 
