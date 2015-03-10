@@ -129,6 +129,7 @@ list<SP_Object> SVDPoseEstimator::process( const vector<MatchRGBD> & matches, SP
                         ranked_n[y] ++;
             }
 
+//            cout << relation_graph << endl;
             // filter consistent matches
             vector<MatchRGBD> filtered_matches;
             int max_node_index = distance( ranked_n.begin(), max_element(ranked_n.begin(), ranked_n.end()) );

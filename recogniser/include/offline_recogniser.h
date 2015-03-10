@@ -50,7 +50,8 @@
 
 using namespace std;
 
-#define WINDOW_NAME "objwindow"
+
+
 
 class OfflineRecogniser{
 
@@ -84,11 +85,11 @@ private:
     };
 
     // target item from request
-    struct TargetItem {
-        int  target_index;
-        string  target_name;
-        vector<int> removed_items_indices;
-    };
+//    struct TargetItem {
+//        int  target_index;
+//        string  target_name;
+//        vector<int> removed_items_indices;
+//    };
 
     // methods for all working order item
     struct Item{
@@ -100,7 +101,7 @@ private:
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     // constructor and destructor
-    OfflineRecogniser( ros::NodeHandle & nh );
+    OfflineRecogniser( ros::NodeHandle & nh, string data_dir );
     ~OfflineRecogniser();
 
     // main processing function
@@ -164,20 +165,20 @@ private:
     SensorData sensor_data_;
 
     SensorData  *sensor_data_ptr_;
-    SensorData dBuf[2];
-    SensorData  *imshow_data_ptr_;
-    unsigned int cindex;
+//    SensorData dBuf[2];
+//    SensorData  *imshow_data_ptr_;
+//    unsigned int cindex;
 
     bool        sensor_empty_;
     boost::mutex sensor_mutex_;
     boost::condition_variable sensor_cond_;
 
     // unique lock
-    TargetItem  target_item_;
+//    TargetItem  target_item_;
     bool        target_received_;
     bool        image_captured_;
     boost::mutex      srvc_mutex_;
-    boost::condition_variable srvc_cond_;
+//    boost::condition_variable srvc_cond_;
 
     int         target_count_;  // id for the request
 
@@ -193,10 +194,10 @@ private:
 
     // target item index
     int data_index_;
-
+    string data_dir_;
 
     // methods configuration file
-    map<string, string> methods_; // 1 -> object name, 2 -> method
+    map<string, RecogMethod> methods_; // 1 -> object name, 2 -> method
 
     // object name and methods
     vector<Item> items_;

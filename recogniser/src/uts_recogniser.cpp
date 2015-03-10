@@ -91,7 +91,7 @@ UTSRecogniser::UTSRecogniser(ros::NodeHandle &nh)
     ROS_INFO( "subscribing to topic %s", camera_rgb_info_topic_.c_str());
 
     // publish topic
-    recog_pub_ = nh.advertise<apc_msgs::ObjectPoseList>( g_object_topic_name, 100 );
+    recog_pub_ = nh.advertise<apc_msgs::RowBinObjects>( g_object_topic_name, 100 );
 
 
     //Open a window to display the image
@@ -305,7 +305,7 @@ void UTSRecogniser::process() {
                         }
                         case RGBD_RECOG:
                         {
-                            RGBDRecogniser recog( data->xtion_rgb_ptr->image, data->xtion_depth_ptr->image, data->xtion_cloud_ptr, g_seg_model_dir );
+                            RGBDRecogniser recog( data->xtion_rgb_ptr->image, data->xtion_depth_ptr->image, data->xtion_cloud_ptr/*, g_seg_model_dir */);
                             recog.set_env_configuration( target_item_.target_index, work_order_, bin_contents_ );
                             recog.set_camera_params( xtion_rgb_model_.fx(), xtion_rgb_model_.fy(), xtion_rgb_model_.cx(), xtion_rgb_model_.cy() );
                             recog.load_models( g_models_dir );
@@ -313,7 +313,6 @@ void UTSRecogniser::process() {
                             if ( recog_success == true ) {
                                 list<SP_Object> recog_results = recog.get_objects();
                                 foreach( object, recog_results ) {
-                                    SP_Object object;
                                     obj.name = object->model_->name_;
 
                                     obj.pose.position.x = object->pose_.t_.x();

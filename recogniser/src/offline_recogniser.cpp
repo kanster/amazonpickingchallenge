@@ -14,17 +14,26 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+#include <pcl/console/parse.h>
+
+// publish poses topic name
+const string g_object_topic_name = "/object_poses";
+
 // service server name
 const string g_target_srv_name  = "/data_publish_srv";
 
 // json configuration file
-const string g_json_filename    = "../data/uts.json";
+const string g_json_filename    = "/home/kanzhi/hydro_workspace/amazon_picking_challenge/uts_recogniser/data/amazon.json";
 
 // object models, xml
-const string g_models_dir       = "../data/object_models";
+const string g_models_dir       = "/home/kanzhi/hydro_workspace/amazon_picking_challenge/uts_recogniser/data/amazon_models";
 
 // method configuration
-const string g_method_filename  = "../data/method.txt";
+const string g_method_filename  = "/home/kanzhi/hydro_workspace/amazon_picking_challenge/uts_recogniser/data/method.txt";
+
+const string g_rgb_win_name     = "rgb_image";
+const string g_mask_win_name    = "mask_image";
+
 
 // constructor
 OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh, string data_dir)
@@ -69,8 +78,13 @@ OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh, string data_dir)
     camera_rgb_info_topic_ = nh.resolveName( "/camera/camera_info" );
     ROS_INFO( "subscribing to topic %s", camera_rgb_info_topic_.c_str());
 
+    recog_pub_ = nh.advertise<apc_msgs::BinObjects>(g_object_topic_name, 100);
+
     //Open a window to display the image
-    cv::namedWindow(WINDOW_NAME);
+//    cv::namedWindow(g_rgb_win_name);
+//    cv::moveWindow( g_rgb_win_name, 0, 0 );
+//    cv::namedWindow(g_mask_win_name);
+//    cv::moveWindow( g_mask_win_name, 1280, 0 );
 }
 
 // desctructor
@@ -81,7 +95,8 @@ OfflineRecogniser::~OfflineRecogniser() {
     process_thread_.join();
 
     //Remove the window to display the image
-    cv::destroyWindow(WINDOW_NAME);
+//    cv::destroyWindow(g_rgb_win_name);
+//    cv::destroyWindow( g_mask_win_name );
 }
 
 // sensor callback
@@ -101,9 +116,6 @@ void OfflineRecogniser::sensor_callback( const sensor_msgs::ImageConstPtr & rgb_
     icap = image_captured_;
     srvc_mutex_.unlock();
 
-
-
-    std::cout <<"sensor callback" << "\n";
     if (!lrecg && !icap) {
         SensorData* data = sensor_data_ptr_;
         xtion_rgb_model_.fromCameraInfo( rgb_image_info );
@@ -153,20 +165,17 @@ bool OfflineRecogniser::target_srv_callback(apc_msgs::DataPublish::Request &req,
         data_index_ = req.DataIndex;
 
         ROS_INFO( "Target image index %d", data_index_ );
+        resp.Found = true;
         target_received_ = true;
         srvc_mutex_.unlock();
     }
     else {
+        resp.Found = false;
         srvc_mutex_.unlock();
     }
 
-    // adding mutex to wait for processing
-    {
-        boost::mutex::scoped_lock lock( srvc_mutex_ );
-        while ( !recogniser_done_ ) {
-            srvc_cond_.wait( lock );
-        }
-    }
+
+
 
     return true;
 }
@@ -193,21 +202,27 @@ void OfflineRecogniser::process() {
                  data->xtion_depth_ptr->image.rows != 0 && data->xtion_depth_ptr->image.cols != 0 &&
                  data->camera_rgb_ptr->image.rows != 0 && data->camera_rgb_ptr->image.cols != 0 ) {
 
-                // convert depth image scale
-                double min;
-                double max;
-                cv::minMaxIdx(data->xtion_depth_ptr->image, &min, &max);
-                cv::convertScaleAbs(data->xtion_depth_ptr->image, data->xtion_depth_ptr->image, 255/max);
+//                // convert depth image scale
+//                double min;
+//                double max;
+//                cv::minMaxIdx(data->xtion_depth_ptr->image, &min, &max);
+//                cv::convertScaleAbs(data->xtion_depth_ptr->image, data->xtion_depth_ptr->image, 255/max);
 
                 ROS_INFO("Load mask images with index %d", data_index_);
-                string xtion_rgb_mask_path  = mask_dir_ + "/xtion_rgb_mask_" + boost::lexical_cast<std::string>(data_index_) + ".png";
-                string xtion_depth_mask_path= mask_dir_ + "/xtion_depth_mask_" + boost::lexical_cast<std::string>(data_index_) + ".png";
-                string camera_rgb_mask_path = mask_dir_ + "/camera_rgb_mask_" + boost::lexical_cast<std::string>(data_index_) + ".png";
+                string xtion_rgb_mask_path  = data_dir_ + "/xtion_rgb_mask_" + boost::lexical_cast<std::string>(data_index_) + ".png";
+                string xtion_depth_mask_path= data_dir_ + "/xtion_depth_mask_" + boost::lexical_cast<std::string>(data_index_) + ".png";
+                string camera_rgb_mask_path = data_dir_ + "/camera_rgb_mask_" + boost::lexical_cast<std::string>(data_index_) + ".png";
                 // load mask image
                 cv::Mat xtion_rgb_mask = cv::imread( xtion_rgb_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
                 cv::Mat xtion_depth_mask = cv::imread( xtion_depth_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
                 cv::Mat camera_rgb_mask = cv::imread( camera_rgb_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
-                
+
+
+//                cv::imshow( g_mask_win_name, camera_rgb_mask );
+//                cv::imshow(g_rgb_win_name, data->camera_rgb_ptr->image);
+//                cv::waitKey(5);
+
+
                 // foreach item in the bin
                 // generate correspondece between bin id and collected data id
                 string bin_id;  // better method by add constant to generate char
@@ -227,17 +242,22 @@ void OfflineRecogniser::process() {
                 }
 
                 vector<string> items = bin_contents_[bin_id];
+                apc_msgs::BinObjects bin_objs;
                 for ( int i = 0; i < (int)items.size(); ++ i ) {
                     apc_msgs::Object obj;
 
                     string item_name = items[i];
+
+                    ROS_INFO( "Start recognising item %s in bin %s", item_name.c_str(), bin_id.c_str() );
+
                     RecogMethod method = methods_[item_name];
                     switch (method) {
                     case RGB_RECOG:
                     {
                         cv::Mat bin_mask_image = cv::imread( camera_rgb_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
                         RGBRecogniser recog( data->camera_rgb_ptr->image, bin_mask_image );
-                        recog.set_env_configuration( target_item_.target_index, work_order_, bin_contents_ );
+//                        recog.set_env_configuration( data_index_-1, work_order_, bin_contents_ );
+                        recog.set_env_configuration( item_name, bin_contents_[bin_id] );
                         recog.set_camera_params( camera_rgb_model_.fx(), camera_rgb_model_.fy(), camera_rgb_model_.cx(), camera_rgb_model_.cy() );
                         recog.load_models( g_models_dir );
                         bool recog_success = recog.run(15, 10, true );
@@ -266,21 +286,51 @@ void OfflineRecogniser::process() {
                     }
                     case RGBD_RECOG:
                     {
+                        RGBDRecogniser recog( data->xtion_rgb_ptr->image, xtion_depth_mask, data->xtion_depth_ptr->image, data->xtion_cloud_ptr);
+                        recog.set_env_configuration( item_name, bin_contents_[bin_id] );
+                        recog.set_camera_params( xtion_rgb_model_.fx(), xtion_rgb_model_.fy(), xtion_rgb_model_.cx(), xtion_rgb_model_.cy() );
+                        recog.load_models( g_models_dir );
+                        bool recog_success = recog.run(true);
+                        if ( recog_success == true ) {
+                            list<SP_Object> recog_results = recog.get_objects();
+                            foreach( object, recog_results ) {
+                                obj.name = object->model_->name_;
+
+                                obj.pose.position.x = object->pose_.t_.x();
+                                obj.pose.position.y = object->pose_.t_.y();
+                                obj.pose.position.z = object->pose_.t_.z();
+
+                                obj.pose.orientation.x = object->pose_.q_.x();
+                                obj.pose.orientation.y = object->pose_.q_.y();
+                                obj.pose.orientation.z = object->pose_.q_.z();
+                                obj.pose.orientation.w = object->pose_.q_.w();
+
+                                obj.mean_quality = object->score_;
+
+                                bin_objs.items_in_bin.push_back( obj );
+
+                            }
+                        }
                         break;
                     }
-                    }
 
+                    default:
+                        break;
+
+                    }
                 }
 
+                ROS_INFO( "Finish recognising for bin %s", bin_id.c_str() );
 
-                cv::imshow(WINDOW_NAME, data->camera_rgb_ptr->image);
-                cv::waitKey(5);
+
+                recog_pub_.publish( bin_objs );
+
 
 
                 srvc_mutex_.lock();
                 recogniser_done_ = true;
                 srvc_mutex_.unlock();
-                srvc_cond_.notify_one();
+//                srvc_cond_.notify_one();
 
 
                 sensor_mutex_.lock();
@@ -311,7 +361,10 @@ void OfflineRecogniser::load_method_config( string filename ) {
     vector<string> seg_line;
     while ( getline(in, line) ) {
         boost::algorithm::split( seg_line, line, boost::algorithm::is_any_of(" ") );
-        methods_.insert( make_pair(seg_line[0], seg_line[1]) );
+        if ( seg_line[1] == "rgb" )
+            methods_.insert( make_pair(seg_line[0], RGB_RECOG) );
+        else if ( seg_line[1] == "rgbd" )
+            methods_.insert( make_pair(seg_line[0], RGBD_RECOG) );
         ROS_INFO( "Object name %s and method %s ", seg_line[0].c_str(), seg_line[1].c_str());
         seg_line.clear();
     }
@@ -351,12 +404,31 @@ void OfflineRecogniser::start_monitor( void ) {
     }
 }
 
+void print_usage( char * prog_name ) {
+    std::cout << "\nUsage: " << prog_name << " [options]\n"
+              << "Options:\n"
+              << "-------------------------------------------\n"
+              << "\t-dir <string>           data directory\n"
+              << "\t-h                    this help\n"
+              << "\n\n";
+}
+
 
 int main( int argc, char ** argv ) {
-    ros::init( argc, argv, "offline_recogniser" );
-    ros::NodeHandle nh("~");
-    OfflineRecogniser reco( nh );
-    reco.start_monitor();
+    if (pcl::console::find_argument (argc, argv, "-h") >= 0) {
+        print_usage(argv[0]);
+        return 0;
+    }
+    string dir;
+    if ( pcl::console::parse(argc, argv, "-dir", dir) >= 0 ) {
+        pcl::console::print_highlight( "Read mask image from %s\n", dir.c_str() );
+
+        ros::init( argc, argv, "offline_recogniser" );
+        ros::NodeHandle nh("~");
+        OfflineRecogniser reco( nh, dir );
+        reco.start_monitor();
+        return 0;
+    }
     return 0;
 }
 

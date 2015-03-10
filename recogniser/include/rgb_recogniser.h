@@ -87,6 +87,9 @@ public:
     /** set target item related variables */
     void set_env_configuration( int idx, vector<pair<string, string> > work_order, map<string, vector<string> > bin_contents );
 
+    /** set target item and neighboured items */
+    void set_env_configuration( string target_item, vector<string> items );
+
     /** set camera parameters */
     void set_camera_params( float fx, float fy, float cx, float cy );
 

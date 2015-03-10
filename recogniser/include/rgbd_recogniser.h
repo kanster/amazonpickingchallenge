@@ -63,7 +63,7 @@ using namespace std;
 class RGBDRecogniser{
 private:
     string models_dir_;
-    string seg_model_dir_;
+//    string seg_model_dir_;
 
     cv::Mat rgb_image_;
     cv::Mat depth_image_;
@@ -95,15 +95,16 @@ private:
 
 public:
     /** constructor */
-    RGBDRecogniser( cv::Mat rgb_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, string seg_model_dir );
+    RGBDRecogniser( cv::Mat rgb_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud/*, string seg_model_dir*/ );
 
     /** constructor with mask image */
-    RGBDRecogniser( cv::Mat rgb_image, cv::Mat mask_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, string seg_model_dir );
+    RGBDRecogniser( cv::Mat rgb_image, cv::Mat mask_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud/*, string seg_model_dir*/ );
 
     void load_models( string models_dir );
 
     /** set target item related variables */
     void set_env_configuration( int idx, vector<pair<string, string> > work_order, map<string, vector<string> > bin_contents );
+    void set_env_configuration( string target_item, vector<string> items );
 
     /** set camera parameters */
     void set_camera_params( float fx, float fy, float cx, float cy );

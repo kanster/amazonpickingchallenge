@@ -192,7 +192,9 @@ void display_features(const cv::Mat & image, const vector<DetectedFeatureRGBD> &
         }
     }
 
-    cv::namedWindow( "feature" );
+    cv::namedWindow( "feature", CV_WINDOW_NORMAL );
+    cv::resizeWindow( "feature", 640, 480 );
+    cv::moveWindow( "feature", 0, 0 );
     cv::imshow( "feature", rgb_image );
     cv::waitKey(10);
     rgb_image.release();
@@ -247,6 +249,9 @@ void display_matches(const cv::Mat &image, const vector<MatchRGBD> &matches ) {
         const MatchRGBD & m = matches[i];
         cv::circle( rgb_image, cv::Point( m.img2d(0), m.img2d(1) ), 3, color, 2 );
     }
+    cv::namedWindow( "matches", CV_WINDOW_NORMAL );
+    cv::resizeWindow( "matches", 640, 480 );
+    cv::moveWindow( "matches", 0, 480);
     cv::imshow( "matches", rgb_image );
     cv::waitKey( 10 );
     rgb_image.release();
@@ -261,7 +266,11 @@ void display_clusters(const cv::Mat &image, const vector<MatchRGBD> &matches, ve
             cv::circle( rgb_image, cv::Point( m.img2d(0), m.img2d(1) ), 3, color, 2 );
         }
     }
+    cv::namedWindow( "clusters", CV_WINDOW_NORMAL );
+    cv::resizeWindow( "clusters", 640, 480 );
+    cv::moveWindow( "clusters", 640, 0);
     cv::imshow( "clusters", rgb_image );
+
     cv::waitKey(10);
     rgb_image.release();
 }
@@ -316,7 +325,9 @@ void display_pose(const cv::Mat &image, const list<SP_Object> &objects, const Ve
         cv::line( rgb_image, pt[3], pt[7], color, 2 );
         it ++;
     }
-    cv::namedWindow( "pose" );
+    cv::namedWindow( "pose", CV_WINDOW_NORMAL );
+    cv::resizeWindow( "pose", 640, 480 );
+    cv::moveWindow( "pose", 640, 480 );
     cv::imshow( "pose", rgb_image );
     cv::waitKey(10);
     rgb_image.release();
@@ -337,7 +348,9 @@ void display_features(const cv::Mat &image, const vector<DetectedFeatureRGB> &fe
     cv::Mat rgb_image = image.clone();
     for ( size_t i = 0; i < features.size(); i ++ )
         cv::circle( rgb_image, cv::Point(features[i].img2d(0), features[i].img2d(1)), 3, cv::Scalar(128, 0, 255), 2 );
-    cv::namedWindow( "feature" );
+    cv::namedWindow( "feature", CV_WINDOW_NORMAL );
+    cv::resizeWindow( "feature", 640, 480 );
+    cv::moveWindow( "feature", 0, 0 );
     cv::imshow( "feature", rgb_image );
     cv::waitKey(10);
     rgb_image.release();
@@ -351,6 +364,9 @@ void display_matches(const cv::Mat &image, const vector<MatchRGB> &matches) {
         const MatchRGB & m = matches[i];
         cv::circle( rgb_image, cv::Point( m.img2d(0), m.img2d(1) ), 3, color, 2 );
     }
+    cv::namedWindow( "matches", CV_WINDOW_NORMAL );
+    cv::resizeWindow( "matches", 640, 480 );
+    cv::moveWindow( "matches", 0, 480 );
     cv::imshow( "matches", rgb_image );
     cv::waitKey( 10 );
     rgb_image.release();
@@ -366,6 +382,9 @@ void display_clusters(const cv::Mat &image, const vector<MatchRGB> &matches, vec
             cv::circle( rgb_image, cv::Point( m.img2d(0), m.img2d(1) ), 3, color, 2 );
         }
     }
+    cv::namedWindow( "clusters", CV_WINDOW_NORMAL );
+    cv::resizeWindow( "clusters", 640, 480 );
+    cv::moveWindow( "clusters", 640, 0 );
     cv::imshow( "clusters", rgb_image );
     cv::waitKey(10);
     rgb_image.release();

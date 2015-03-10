@@ -2,22 +2,23 @@
 
 // public functions
 /** constructor, load sensor data */
-RGBDRecogniser::RGBDRecogniser(cv::Mat rgb_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, string seg_model_dir) {
+RGBDRecogniser::RGBDRecogniser(cv::Mat rgb_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud/*, string seg_model_dir*/) {
     rgb_image_      = rgb_image;
     depth_image_    = depth_image;
     cloud_.reset( new pcl::PointCloud<pcl::PointXYZRGB>() );
     cloud_ = cloud;
-    seg_model_dir_ = seg_model_dir;
+//    seg_model_dir_ = seg_model_dir;
 }
 
 /** constructor, load sensor data */
-RGBDRecogniser::RGBDRecogniser(cv::Mat rgb_image, cv::Mat mask_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, string seg_model_dir) {
+RGBDRecogniser::RGBDRecogniser(cv::Mat rgb_image, cv::Mat mask_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud/*, string seg_model_dir*/) {
     rgb_image_      = rgb_image;
     mask_image_     = mask_image;
     depth_image_    = depth_image;
     cloud_.reset( new pcl::PointCloud<pcl::PointXYZRGB>() );
     cloud_ = cloud;
-    seg_model_dir_ = seg_model_dir;
+    cout << "constructor of rgbd recogniser\n";
+//    seg_model_dir_ = seg_model_dir;
 }
 
 
@@ -34,6 +35,20 @@ void RGBDRecogniser::set_env_configuration(int idx, vector<pair<string, string> 
             target_in_bin_ = i;
     }
 }
+
+/** set target item and neighboured items */
+void RGBDRecogniser::set_env_configuration( string target_item, vector<string> items ) {
+    target_object_      = target_item;
+    target_bin_content_ = items;
+    cout << "Target item " << target_object_ << endl;
+
+    for ( size_t i = 0; i < target_bin_content_.size(); ++ i ) {
+        cout << "   object " << i << " " << target_bin_content_[i] << "\n";
+        if ( target_bin_content_[i] == target_object_ )
+            target_in_bin_ = i;
+    }
+}
+
 
 /** set camera params */
 void RGBDRecogniser::set_camera_params(float fx, float fy, float cx, float cy) {
@@ -84,21 +99,21 @@ bool RGBDRecogniser::run( bool visualise ) {
     MaskGenerator mask_generator;
     this->mask_image_ = mask_generator.process( this->cloud_, this->mask_image_ );
 
+
     FeatureDetector feature_detector( "sift" );
     this->detected_features_ = feature_detector.process( this->rgb_image_, this->cloud_, this->mask_image_ );
 
-    FeatureMatcher feature_matcher( 5.0, 0.8, 128, "sift" );
+    FeatureMatcher feature_matcher( 5.0, 0.9, 128, "sift" );
     feature_matcher.load_models( this->models_ );
     this->matches_ = feature_matcher.process( this->detected_features_, target_in_bin_ );
+
 
     FeatureCluster feature_cluster( 30., 5., 7, 100 );
     this->clusters_ = feature_cluster.process( this->matches_ );
 
-    SVDPoseEstimator svd_pose_estimator( 0.5, 7 ); // cm
+    SVDPoseEstimator svd_pose_estimator( 1.0, 7 ); // cm
     this->objects_ = svd_pose_estimator.process( this->matches_, this->models_[target_in_bin_], this->clusters_ );
 
-    if ( !this->objects_.empty() )
-        return false;
     cout << "\n-----------------------------------------\n";
     foreach( object, this->objects_ ) {
         pcl::console::print_highlight( "Recognise %s with translation [%f, %f, %f] and score %f\n", object->model_->name_.c_str(), object->pose_.t_.x(), object->pose_.t_.y(), object->pose_.t_.z(), object->score_ );

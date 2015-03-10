@@ -28,7 +28,7 @@ cv::Mat MaskGenerator::process(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr,
                 depth_mask_image.at<uchar>(y, x) = 255;
     cv::erode( depth_mask_image, depth_mask_image, element );
     cv::Mat mask_image_or( cloud_ptr->height, cloud_ptr->width, CV_8UC1, cv::Scalar::all(0) );
-    cv::bitwise_or( mask_image, depth_mask_image, mask_image_or );
+    cv::bitwise_and( mask_image, depth_mask_image, mask_image_or );
     element.release();
     return mask_image_or;
 }
