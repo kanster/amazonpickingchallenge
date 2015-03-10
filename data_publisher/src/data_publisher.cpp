@@ -167,7 +167,16 @@ DataPublisher::DataPublisher(ros::NodeHandle &nh, std::string dir, int n) {
 
             data_srv.request.DataIndex = count_;
 
-            ros::Rate rate(5);
+            ROS_INFO( "Publish data frame %d and send request ...", count_ );
+            if( client_.call(data_srv) ) {
+                ROS_INFO( "return status: %s", data_srv.response.Found? "true" : "false" );
+            }
+            else {
+                ROS_ERROR( "Failed to call service %s", g_target_srv_name.c_str() );
+            }
+
+
+            ros::Rate rate(10);
             xtion_rgb_pub_.publish( xtion_rgb_msg_ );
             xtion_rgb_info_pub_.publish( xtion_rgb_info_msg_ );
 
@@ -179,13 +188,6 @@ DataPublisher::DataPublisher(ros::NodeHandle &nh, std::string dir, int n) {
             camera_rgb_pub_.publish( camera_rgb_msg_ );
             camera_rgb_info_pub_.publish( camera_rgb_info_msg_ );
 
-            ROS_INFO( "Publish data frame %d and send request ...", count_ );
-            if( client_.call(data_srv) ) {
-                ROS_INFO( "return status: %s", data_srv.response.Found? "true" : "false" );
-            }
-            else {
-                ROS_ERROR( "Failed to call service %s", g_target_srv_name.c_str() );
-            }
 
 
             ros::spinOnce();
