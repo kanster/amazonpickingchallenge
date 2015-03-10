@@ -11,11 +11,16 @@
 ## How to run it?
 
 Normally, I am more used to run ros package directly using binray file instead of `rosrun <package name> <binary name>`.
+
 1. Open a terminal, go to **data_publisher**, `./bin/data_publisher -d ../data/ -n 2`
 2. Open another terminal, go to **recogniser**, `./bin/offline_recogniser -dir ../data/`
 
 ### Simple explanation
 
+The **data_publisher** will load the collected data in the given directory frame by frame iteratively. In the repo, there are only two frame of data, here we assume the frame 1 is from `bin_A` and frame 2 is from `bin_B`, check the **recogniser/data/amazon.json** for detail environment configuration of the shelf. Based on the sending request from **data_publisher**, to be specifically, the frame index in the request, **offline_recogniser** is able to know what the id of the bin and further obtain the items in the bin. Based on the **recogniser/data/methods.txt**, the **offline_recogniser** which **recogniser** (here we mean rgb or rgbd) it will use to recogniser the item.
+
+Some screenshot of the results are:
+![](http://d.pcs.baidu.com/thumbnail/f3bb28ddf7cd61a44f64d2fc4cb5fcbb?fid=2587132861-250528-882813956686291&time=1425978000&rt=pr&sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-1VUSZ%2bnN1oNBnoFcsCKDIkt84O4%3d&expires=8h&prisign=unknow&chkbd=0&chkv=0&size=c10000_u10000&quality=90)
 
 
 
