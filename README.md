@@ -1,5 +1,15 @@
 #Amazon Picking Challenge
 
+## How to compile it?
+
+1.  Compile the `apc_msgs` which is a must in `recogniser` and `data_publisher`
+2.  `data_writer` is not necessary using `offline_recogniser`
+3.  Compile `data_publisher`, for the detail of usage of data_publisher, go the sub-directory.
+4.  Compile `recogniser`, if you are using ubunt 12.04 64 bit system with ROS Hydro, the libraries in `dependencies` folder should work, otherwise, compile the packages in `externals` folder and put the library in `dependencies` folder. For the detail explanation, go to sub-directory
+
+
+
+
 ##Development Log:
 
   08/03/2015: 
@@ -31,12 +41,11 @@
   Communication problem between `data_publisher` and `recogniser` is solved.
   The next frame of sensor data input will only be published if the `recogniser` send a feedback.
   
-  **todo**
-  
-  Load the mask images and other information in the `recogniser`
-  
-  
-  
-  `recogniser` remains the same with online sensor data input
 
-##How to run it?
+  ~~Load the mask images and other information in the `recogniser`~~
+  
+  10/03/2015
+  
+  Successful tested using offline collected data
+
+
