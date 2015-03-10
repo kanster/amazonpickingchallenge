@@ -21,7 +21,7 @@ The **data_publisher** will load the collected data in the given directory frame
 
 Some screenshot of the results are:
 ![](http://d.pcs.baidu.com/thumbnail/f3bb28ddf7cd61a44f64d2fc4cb5fcbb?fid=2587132861-250528-882813956686291&time=1425978000&rt=pr&sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-1VUSZ%2bnN1oNBnoFcsCKDIkt84O4%3d&expires=8h&prisign=unknow&chkbd=0&chkv=0&size=c10000_u10000&quality=90)
-
+![](http://d.pcs.baidu.com/thumbnail/f9215859a53006193a8448e093a8bd98?fid=2587132861-250528-526655755935820&time=1425978000&rt=pr&sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-Bvh7BgnZMJF7RSER18P41QCuldM%3d&expires=8h&prisign=unknow&chkbd=0&chkv=0&size=c10000_u10000&quality=90)
 
 
 ##Development Log:
