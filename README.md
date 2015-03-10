@@ -2,10 +2,19 @@
 
 ## How to compile it?
 
-1.  Compile the `apc_msgs` which is a must in `recogniser` and `data_publisher`
-2.  `data_writer` is not necessary using `offline_recogniser`
-3.  Compile `data_publisher`, for the detail of usage of data_publisher, go the sub-directory.
-4.  Compile `recogniser`, if you are using ubunt 12.04 64 bit system with ROS Hydro, the libraries in `dependencies` folder should work, otherwise, compile the packages in `externals` folder and put the library in `dependencies` folder. For the detail explanation, go to sub-directory
+1.  Compile the **apc_msgs** which is a must in **recogniser** and **data_publisher**
+2.  **data_writer** is not necessary using **offline_recogniser**
+3.  Compile **data_publisher**, for the detail of usage of data_publisher, go the sub-directory.
+4.  Compile **recogniser**, if you are using ubunt 12.04 64 bit system with ROS Hydro, the libraries in **dependencies** folder should work, otherwise, compile the packages in **externals** folder and put the library in **dependencies** folder. For the detail explanation, go to sub-directory
+
+
+## How to run it?
+
+Normally, I am more used to run ros package directly using binray file instead of `rosrun <package name> <binary name>`.
+1. Open a terminal, go to **data_publisher**, `./bin/data_publisher -d ../data/ -n 2`
+2. Open another terminal, go to **recogniser**, `./bin/offline_recogniser -dir ../data/`
+
+### Simple explanation
 
 
 
