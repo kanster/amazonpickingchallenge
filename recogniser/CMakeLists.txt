@@ -14,8 +14,8 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #genaction()
 
 rosbuild_init()
-rosbuild_gensrv()
-rosbuild_genmsg()
+#rosbuild_gensrv()
+#rosbuild_genmsg()
 
 project( uts_recogniser )
 

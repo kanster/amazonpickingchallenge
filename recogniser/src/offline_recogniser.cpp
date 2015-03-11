@@ -18,7 +18,7 @@
 
 // publish poses topic name
 const string g_object_topic_name = "/object_poses";
-
+const string g_object_srv_name   = "/recog_publish_srv";
 // service server name
 const string g_target_srv_name  = "/data_publish_srv";
 
@@ -33,6 +33,7 @@ const string g_method_filename  = "/home/kanzhi/hydro_workspace/amazon_picking_c
 
 const string g_rgb_win_name     = "rgb_image";
 const string g_mask_win_name    = "mask_image";
+
 
 
 // constructor
@@ -79,7 +80,7 @@ OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh, string data_dir)
     ROS_INFO( "subscribing to topic %s", camera_rgb_info_topic_.c_str());
 
     recog_pub_ = nh.advertise<apc_msgs::BinObjects>(g_object_topic_name, 100);
-
+    recog_client_ = nh.serviceClient<apc_msgs::RecogStatus>( g_object_srv_name );
     //Open a window to display the image
 //    cv::namedWindow(g_rgb_win_name);
 //    cv::moveWindow( g_rgb_win_name, 0, 0 );
@@ -325,7 +326,16 @@ void OfflineRecogniser::process() {
 
                 recog_pub_.publish( bin_objs );
 
-
+                // client to call recogniser notification
+                apc_msgs::RecogStatus recog_status;
+                recog_status.request.recog = true;
+                ROS_INFO( "Sending recognition notification");
+                if( recog_client_.call(recog_status) ) {
+                    ROS_INFO( "return status: %s", recog_status.response.pub? "true" : "false" );
+                }
+                else {
+                    ROS_ERROR( "Failed to call service %s", g_object_srv_name.c_str() );
+                }
 
                 srvc_mutex_.lock();
                 recogniser_done_ = true;

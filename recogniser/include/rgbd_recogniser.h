@@ -31,10 +31,6 @@
 #include <message_filters/sync_policies/exact_time.h>
 #include <cv_bridge/cv_bridge.h>
 
-#include "srv_gen/cpp/include/uts_recogniser/Enable.h"
-#include "msg_gen/cpp/include/uts_recogniser/ObjectPose.h"
-#include "msg_gen/cpp/include/uts_recogniser/ObjectPoseList.h"
-
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>

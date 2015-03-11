@@ -32,6 +32,8 @@
 #include "apc_msgs/RowBinObjects.h"
 
 #include "apc_msgs/DataPublish.h"
+#include "apc_msgs/RecogStatus.h"
+
 
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
@@ -144,6 +146,7 @@ private:
     image_transport::Publisher      image_pub_;         // recognition result, areas
 
     ros::Publisher recog_pub_;                  // recognition result publisher
+    ros::ServiceClient recog_client_;           // recognition result notification
 
     string xtion_rgb_topic_;
     string xtion_rgb_info_topic_;
