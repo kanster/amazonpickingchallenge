@@ -1,0 +1,25 @@
+{
+  "bin_contents":
+  {
+    "bin_A":
+    [
+      "mark_twain_huckleberry_finn","paper_mate_12_count_mirado_black_warrior","expo_dry_erase_board_eraser"
+    ],
+    "bin_B":
+    [
+      "mead_index_cards","genuine_joe_plastic_stir_sticks","laugh_out_loud_joke_book"
+    ]
+  },
+
+  "work_order":
+  [
+    {
+      "bin": "bin_A",
+      "item": "expo_dry_erase_board_eraser"
+    },
+    {
+      "bin": "bin_B",
+      "item": "laugh_out_loud_joke_book"
+    }
+  ]
+}
