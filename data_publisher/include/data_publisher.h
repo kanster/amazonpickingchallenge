@@ -16,6 +16,9 @@
 #define DATA_PUBLISHER_H
 
 #include <apc_msgs/DataPublish.h>
+#include <apc_msgs/RecogStatus.h>
+#include <apc_msgs/BinObjects.h>
+#include <apc_msgs/Object.h>
 
 #include <sensor_msgs/image_encodings.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -30,6 +33,9 @@
 #include <ros/ros.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
+#include <boost/thread/condition_variable.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <iostream>
 #include <string>
@@ -41,6 +47,7 @@ private:
 
     std::string dir_;
     int count_;
+    int n_frames_;
 
     ros::Publisher xtion_rgb_pub_;
     ros::Publisher xtion_rgb_info_pub_;
@@ -61,8 +68,26 @@ private:
 
     ros::ServiceClient client_;
 
+
+    ros::ServiceServer recog_server_;
+
+    ros::Subscriber obj_sub_;
+
+    boost::thread publish_thread_;
+
+    bool recog_completed_;
+    boost::mutex recog_completed_mutex_;
+    boost::condition_variable recog_completed_cond_;
+
 public:
     DataPublisher( ros::NodeHandle & nh, std::string dir, int n );
+
+    void recog_callback( const apc_msgs::BinObjectsConstPtr & objs_msg );
+
+    bool recog_srv_callback( apc_msgs::RecogStatus::Request & req,
+                             apc_msgs::RecogStatus::Response & resp );
+
+    void info_publisher();
 
     ~DataPublisher();
 };
