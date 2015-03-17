@@ -25,56 +25,71 @@ Some screenshot of the results are:
 
 
 ##Development Log:
-	Object recognition status:
 
-		* R = Recognisable, correct
-		* NR = Not Recognisable, will be recognised using Machine Learning
-		* NA = Not available, cannot be purchased in Australia
-		* O = Ordered, no available yet
+17/03/2015
+
+Object recognition status:
+
+	* R = Recognisable, correct
+	* NR = Not Recognisable, will be recognised using Machine Learning
+	* NA = Not available, cannot be purchased in Australia
+	* O = Ordered, no available yet
+
+| Object name                              | Status |
+|------------------------------------------|--------|
+| oreo_mega_stuf                           | NA     |
+| champion_copper_plus_spark_plug          | O      |
+| expo_dry_erase_board_eraser              | R      |
+| genuine_joe_plastic_stir_sticks          | R      |
+| munchkin_white_hot_duck_bath_toy         | NR     |
+| crayola_64_ct                            | O      |
+| mommys_helper_outlet_plugs               | NR     |
+| sharpie_accent_tank_style_highlighters   | NR/R   |
+| stanley_66_052                           | NR     |
+| safety_works_safety_glasses              | NR     |
+| cheezit_big_original                     | NA     |
+| paper_mate_12_count_mirado_black_warrior | R      |
+| feline_greenies_dental_treats            | NR/R   |
+| elmers_washable_no_run_school_glue       | NR/R   |
+| mead_index_cards                         | R      |
+| rolodex_jumbo_pencil_cup                 | NR     |
+| first_years_take_and_toss_straw_cup      | NR     |
+| highland_6539_self_stick_notes           | R      |
+| mark_twain_huckleberry_finn              | R      |
+| kyjen_squeakin_eggs_plush_puppies        | NR     |
+| kong_sitting_frog_dog_toy                | NR     |
+| kong_air_god_squeakair_tennis_ball       | NR     |
+| dr_browns_bottle_brush                   | NR/R   |
+| kong_duck_dog_toy                        | NR     |
+| laugh_out_loud_joke_book                 | R      |
 
 
-| Object name    | Status |
-|----------------|--------|
-| oreo_mega_stuf | NA     |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
-|                |        |
 
 
 	
 
 
-  08/03/2015: 
+08/03/2015: 
+
+`data_writer` can save following topic information to disk by Press `c` button:
+
+  * rgb image from xtion
+  * rgb camera info from xtion, only projection matrix and distortion vector are saved to *yml* file, also for other camera info
+  * depth image from xtion, 16bit
+  * depth camera info from xtion
+  * rgb point cloud from xtion
+  * rgb image from rgb camera
+  * rgb camera info from rgb camera
   
-  `data_writer` can save following topic information to disk by Press `c` button:
-  
-    * rgb image from xtion
-    * rgb camera info from xtion, only projection matrix and distortion vector are saved to *yml* file, also for other camera info
-    * depth image from xtion, 16bit
-    * depth camera info from xtion
-    * rgb point cloud from xtion
-    * rgb image from rgb camera
-    * rgb camera info from rgb camera
-    
-  `data_publisher` can publish saved data to specific topics. This is used as the bridge between sensor data and `recogniser`, the topic name are
-  
-    * /xtion/rgb/image
-    * /xtion/rgb/camera_info
-    * /xtion/depth/image
-    * /xtion/depth/camera_info
-    * /xtion/depth/points
-    * /camera/image
-    * /camera/camera_info
+`data_publisher` can publish saved data to specific topics. This is used as the bridge between sensor data and `recogniser`, the topic name are
+
+  * /xtion/rgb/image
+  * /xtion/rgb/camera_info
+  * /xtion/depth/image
+  * /xtion/depth/camera_info
+  * /xtion/depth/points
+  * /camera/image
+  * /camera/camera_info
     
   ~~Current problem in `data_publisher` is the communication between `data_publisher` and `recogniser`. To be specific, **New frame of data should be published only after the recogniser has finished processing previous frame**.~~
   
