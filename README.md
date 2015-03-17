@@ -44,13 +44,13 @@ Object recognition status:
 | munchkin_white_hot_duck_bath_toy         | NR     |
 | crayola_64_ct                            | O      |
 | mommys_helper_outlet_plugs               | NR     |
-| sharpie_accent_tank_style_highlighters   | NR/R   |
+| sharpie_accent_tank_style_highlighters   | NR/R<sup>1</sup>   |
 | stanley_66_052                           | NR     |
 | safety_works_safety_glasses              | NR     |
 | cheezit_big_original                     | NA     |
 | paper_mate_12_count_mirado_black_warrior | R      |
-| feline_greenies_dental_treats            | NR/R   |
-| elmers_washable_no_run_school_glue       | NR/R   |
+| feline_greenies_dental_treats            | NR/R<sup>2</sup>   |
+| elmers_washable_no_run_school_glue       | NR/R<sup>3</sup>   |
 | mead_index_cards                         | R      |
 | rolodex_jumbo_pencil_cup                 | NR     |
 | first_years_take_and_toss_straw_cup      | NR     |
@@ -59,15 +59,16 @@ Object recognition status:
 | kyjen_squeakin_eggs_plush_puppies        | NR     |
 | kong_sitting_frog_dog_toy                | NR     |
 | kong_air_god_squeakair_tennis_ball       | NR     |
-| dr_browns_bottle_brush                   | NR/R   |
+| dr_browns_bottle_brush                   | NR/R<sup>4</sup>   |
 | kong_duck_dog_toy                        | NR     |
 | laugh_out_loud_joke_book                 | R      |
 
-
-
-
+Detailed explanations:
 	
-
+	1. *sharpie_accent_tank_style_highlighters* can be recognised only using the front view, using the label in the front.
+	2. *feline_greenies_dental_treats* is non-rigid, however, this item can be recognised only if we don't bend the item too much.
+	3. *elmers_washable_no_run_school_glue* can be recognised, the model will be updated lated this week.
+	4. *dr_browns_bottle_brush* can roughly recognised using the texture on the paper board
 
 08/03/2015: 
 
@@ -90,19 +91,11 @@ Object recognition status:
   * /xtion/depth/points
   * /camera/image
   * /camera/camera_info
-    
-  ~~Current problem in `data_publisher` is the communication between `data_publisher` and `recogniser`. To be specific, **New frame of data should be published only after the recogniser has finished processing previous frame**.~~
-  
-  09/03/2015
-  
-  Communication problem between `data_publisher` and `recogniser` is solved.
-  The next frame of sensor data input will only be published if the `recogniser` send a feedback.
-  
 
-  ~~Load the mask images and other information in the `recogniser`~~
-  
-  10/03/2015
-  
-  Successful tested using offline collected data
+09/03/2015
+
+Communication problem between `data_publisher` and `recogniser` is solved.
+The next frame of sensor data input will only be published if the `recogniser` send a feedback.
+
 
 
