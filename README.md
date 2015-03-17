@@ -25,6 +25,34 @@ Some screenshot of the results are:
 
 
 ##Development Log:
+	Object recognition status:
+
+		* R = Recognisable, correct
+		* NR = Not Recognisable, will be recognised using Machine Learning
+		* NA = Not available, cannot be purchased in Australia
+		* O = Ordered, no available yet
+
+
+| Object name    | Status |
+|----------------|--------|
+| oreo_mega_stuf | NA     |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+|                |        |
+
+
+	
+
 
   08/03/2015: 
   
