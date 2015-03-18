@@ -20,8 +20,8 @@ Normally, I am more used to run ros package directly using binray file instead o
 The **data_publisher** will load the collected data in the given directory frame by frame iteratively. In the repo, there are only two frame of data, here we assume the frame 1 is from `bin_A` and frame 2 is from `bin_B`, check the **recogniser/data/amazon.json** for detail environment configuration of the shelf. Based on the sending request from **data_publisher**, to be specifically, the frame index in the request, **offline_recogniser** is able to know what the id of the bin and further obtain the items in the bin. Based on the **recogniser/data/methods.txt**, the **offline_recogniser** which **recogniser** (here we mean rgb or rgbd) it will use to recogniser the item.
 
 Some screenshot of the results are:
-![](http://d.pcs.baidu.com/thumbnail/f3bb28ddf7cd61a44f64d2fc4cb5fcbb?fid=2587132861-250528-882813956686291&time=1425978000&rt=pr&sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-1VUSZ%2bnN1oNBnoFcsCKDIkt84O4%3d&expires=8h&prisign=unknow&chkbd=0&chkv=0&size=c10000_u10000&quality=90)
-![](http://d.pcs.baidu.com/thumbnail/f9215859a53006193a8448e093a8bd98?fid=2587132861-250528-526655755935820&time=1425978000&rt=pr&sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-Bvh7BgnZMJF7RSER18P41QCuldM%3d&expires=8h&prisign=unknow&chkbd=0&chkv=0&size=c10000_u10000&quality=90)
+![](http://s5.sinaimg.cn/middle/001WoJ8ogy6QNoF9qyo44&690)
+![](http://s3.sinaimg.cn/middle/001WoJ8ogy6QNoF8m7Ec2&690)
 
 
 ##Development Log:
@@ -49,8 +49,8 @@ Object recognition status:
 | safety_works_safety_glasses              | NR     |
 | cheezit_big_original                     | NA     |
 | paper_mate_12_count_mirado_black_warrior | R      |
-| feline_greenies_dental_treats            | NR/R<sup>2</sup>   |
-| elmers_washable_no_run_school_glue       | NR/R<sup>3</sup>   |
+| feline_greenies_dental_treats            | R<sup>2</sup>   |
+| elmers_washable_no_run_school_glue       | R<sup>3</sup>   |
 | mead_index_cards                         | R      |
 | rolodex_jumbo_pencil_cup                 | NR     |
 | first_years_take_and_toss_straw_cup      | NR     |
@@ -66,8 +66,8 @@ Object recognition status:
 Detailed explanations:
 	
 	1. *sharpie_accent_tank_style_highlighters* can be recognised only using the front view, using the label in the front.
-	2. *feline_greenies_dental_treats* is non-rigid, however, this item can be recognised only if we don't bend the item too much.
-	3. *elmers_washable_no_run_school_glue* can be recognised, the model will be updated lated this week.
+	2. *feline_greenies_dental_treats* is non-rigid, however, this item can be recognised only if we don't bend the item too much. **model updated**
+	3. *elmers_washable_no_run_school_glue* can be recognised, the model will be updated lated this week. **model updated**
 	4. *dr_browns_bottle_brush* can roughly recognised using the texture on the paper board
 
 08/03/2015: 
