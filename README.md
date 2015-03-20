@@ -38,16 +38,16 @@ Object recognition status:
 | Object name                              | Status |
 |------------------------------------------|--------|
 | oreo_mega_stuf                           | NA     |
-| champion_copper_plus_spark_plug          | O      |
+| champion_copper_plus_spark_plug          | R      |
 | expo_dry_erase_board_eraser              | R      |
 | genuine_joe_plastic_stir_sticks          | R      |
 | munchkin_white_hot_duck_bath_toy         | NR     |
-| crayola_64_ct                            | O      |
+| crayola_64_ct                            | R      |
 | mommys_helper_outlet_plugs               | NR     |
 | sharpie_accent_tank_style_highlighters   | NR/R<sup>1</sup>   |
 | stanley_66_052                           | NR     |
 | safety_works_safety_glasses              | NR     |
-| cheezit_big_original                     | NA     |
+| cheezit_big_original                     | R     |
 | paper_mate_12_count_mirado_black_warrior | R      |
 | feline_greenies_dental_treats            | R<sup>2</sup>   |
 | elmers_washable_no_run_school_glue       | R<sup>3</sup>   |
