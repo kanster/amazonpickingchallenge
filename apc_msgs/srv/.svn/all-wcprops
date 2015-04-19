@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/projects/cas/CAS/svn/!svn/ver/3690/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/srv
+END
+BinsIndices.srv
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/projects/cas/CAS/svn/!svn/ver/3685/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/srv/BinsIndices.srv
+END
+TargetRequest.srv
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/projects/cas/CAS/svn/!svn/ver/3722/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/srv/TargetRequest.srv
+END
+DataPublish.srv
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/projects/cas/CAS/svn/!svn/ver/3685/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/srv/DataPublish.srv
+END
+RecogStatus.srv
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/projects/cas/CAS/svn/!svn/ver/3690/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/srv/RecogStatus.srv
+END
+Enable.srv
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/projects/cas/CAS/svn/!svn/ver/3685/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/srv/Enable.srv
+END

@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/projects/cas/CAS/svn/!svn/ver/3685/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/msg
+END
+ObjectPose.msg
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/projects/cas/CAS/svn/!svn/ver/3685/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/msg/ObjectPose.msg
+END
+NameTypeValue.msg
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/projects/cas/CAS/svn/!svn/ver/3685/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/msg/NameTypeValue.msg
+END
+BinObjects.msg
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/projects/cas/CAS/svn/!svn/ver/3685/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/msg/BinObjects.msg
+END
+Object.msg
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/projects/cas/CAS/svn/!svn/ver/3722/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/msg/Object.msg
+END
+ObjectPoseList.msg
+K 25
+svn:wc:ra_dav:version-url
+V 123
+/projects/cas/CAS/svn/!svn/ver/3685/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/msg/ObjectPoseList.msg
+END
+RowBinObjects.msg
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/projects/cas/CAS/svn/!svn/ver/3685/photogrammetry/projects/kanzhi/amazon_picking_challenge/apc_msgs/msg/RowBinObjects.msg
+END
