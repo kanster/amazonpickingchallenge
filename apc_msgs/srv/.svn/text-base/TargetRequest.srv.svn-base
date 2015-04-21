@@ -1,7 +1,0 @@
-string BinID
-string ObjectName
-string[] BinContents
-int8 ObjectIndex
-int8[] RemovedObjectIndices
----
-bool Found
