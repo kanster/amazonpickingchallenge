@@ -1,13 +1,5 @@
 #Amazon Picking Challenge
 
-## How to compile it?
-
-1.  Compile the **apc_msgs** which is a must in **recogniser** and **data_publisher**
-2.  **data_writer** is not necessary using **offline_recogniser**
-3.  Compile **data_publisher**, for the detail of usage of data_publisher, go the sub-directory.
-4.  Compile **recogniser**, if you are using ubunt 12.04 64 bit system with ROS Hydro, the libraries in **dependencies** folder should work, otherwise, compile the packages in **externals** folder and put the library in **dependencies** folder. For the detail explanation, go to sub-directory
-
-
 ## How to run it?
 
 Normally, I am more used to run ros package directly using binray file instead of `rosrun <package name> <binary name>`.
@@ -16,8 +8,7 @@ Normally, I am more used to run ros package directly using binray file instead o
 
 	`../bin/kd_test ../data/201504174639/xtion_rgb_1.png ../data/201504174639/bin_A_empty.png ../data/201504174639/mask_xtion_rgb_bin_A.png feline_greenies_dental_treats mead_index_cards expo_dry_erase_board_eraser kong_duck_dog_toy`
 	 
-	<binary file> <sensor rgb image> <empty shelf image> <mask bin image> <items in this bin>
-	
+
 2. Test offline recogniser:
 
 	`../bin/offline_recogniser -j ../data/201504171107.json -mask ../data/201504174639/ -method ../data/method.txt -kd ../data/kd_models/`
