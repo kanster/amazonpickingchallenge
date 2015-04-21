@@ -13,10 +13,15 @@
 Normally, I am more used to run ros package directly using binray file instead of `rosrun <package name> <binary name>`.
 
 1. Test Kernel Descriptor at first:
+
 	`../bin/kd_test ../data/201504174639/xtion_rgb_1.png ../data/201504174639/bin_A_empty.png ../data/201504174639/mask_xtion_rgb_bin_A.png feline_greenies_dental_treats mead_index_cards expo_dry_erase_board_eraser kong_duck_dog_toy`
+	 
 	<binary file> <sensor rgb image> <empty shelf image> <mask bin image> <items in this bin>
+	
 2. Test offline recogniser:
+
 	`../bin/offline_recogniser -j ../data/201504171107.json -mask ../data/201504174639/ -method ../data/method.txt -kd ../data/kd_models/`
+	
 	`../bin/pseudo_request -d ../data/201504174639/ -n 12 -j ../data/201504171107.json`
 
 
