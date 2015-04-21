@@ -668,7 +668,7 @@ static void pcnormal(const MatrixXf& pcloud_x, const MatrixXf& pcloud_y, const M
     normal_y.resize( height, width );
     normal_z.resize( height, width );
 
-    MatrixXf wpc( (2*normal_window+1)*(2*normal_window+1), 3 );
+    MatrixXf wpc( static_cast<int>((2*normal_window+1)*(2*normal_window+1)), 3 );
 
     SelfAdjointEigenSolver<Matrix3f> es;
 

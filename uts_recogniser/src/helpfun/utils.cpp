@@ -408,7 +408,58 @@ vector<pair<string, int> > deprecate_bin_contents(const vector<string> &bin_cont
 }
 
 
+list< Pt<2> > getConvexHull( vector< Pt<2> > &points ) {
+    sort( points.begin(), points.end() );
 
+    std::list< Pt<2> > halfHull, convexHull;
+    halfHull.push_front( *points.begin() );
+    int p = 1, direction = 1;
+    while( p != -1 && p < (int)points.size() ) {
+
+        halfHull.push_front( points[p] );
+
+        bool convex = false;
+        while( !convex && halfHull.size() > 2 ) {
+            typeof(halfHull.begin()) p0, p1, p2;
+            p0 = halfHull.begin(); p2 = p0++; p1 = p0++;
+
+            float det = (((*p0)[0]-(*p1)[0])*((*p2)[1]-(*p1)[1])) - (((*p2)[0]-(*p1)[0])*((*p0)[1]-(*p1)[1]));
+            if( det <= 0 ) halfHull.erase(p1);
+            else convex = true;
+        }
+
+        if( p == (int)points.size() -1 ) {
+
+            halfHull.pop_front();
+            convexHull.splice( convexHull.begin(), halfHull );
+            halfHull.push_front( points[p] );
+            direction=-1;
+        }
+        p+=direction;
+    }
+    halfHull.pop_front();
+    convexHull.splice( convexHull.begin(), halfHull );
+
+    return convexHull;
+}
+
+vector<cv::Point> get_convex_hull(vector<cv::Point> &points) {
+    // convert to Pt type
+    vector< Pt<2> > pt_points;
+    for ( int i = 0; i < (int)points.size(); ++ i ) {
+        Pt<2> pt;
+        pt.init( points[i].x, points[i].y );
+        pt_points.push_back( pt );
+    }
+
+    list<Pt<2> > convex_pts = getConvexHull( pt_points );
+
+    vector<cv::Point> convex_points;
+    foreach( pt, convex_pts ) {
+        convex_points.push_back( cv::Point(pt[0], pt[1])     );
+    }
+    return convex_points;
+}
 
 
 

@@ -268,26 +268,19 @@ void OfflineRecogniser::process() {
 
                 ROS_INFO("Load mask images with index %s", srv_bin_id_.c_str());
                 string xtion_rgb_mask_path  = mask_dir_ + "/mask_xtion_rgb_" + srv_bin_id_ + ".png";
-                string xtion_depth_mask_path= mask_dir_ + "/mask_xtion_depth_" + srv_bin_id_ + ".png";
-                string camera_rgb_mask_path = mask_dir_ + "/mask_camera_rgb_" + srv_bin_id_ + ".png";
                 // load mask image
                 cv::Mat xtion_rgb_mask = cv::imread( xtion_rgb_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
-                cv::Mat xtion_depth_mask = cv::imread( xtion_depth_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
-                cv::Mat camera_rgb_mask = cv::imread( camera_rgb_mask_path, CV_LOAD_IMAGE_GRAYSCALE );
 
                 // kernel descriptor recogniser
                 cv::Mat rgb_image = data->xtion_rgb_ptr->image.clone();
-                KDRecogniser kdr( rgb_image );
-//                string mask_image_path = mask_dir_ + "/" + srv_bin_id_ + "_mask.jpg";
-                string empty_image_path = mask_dir_ + "/" + srv_bin_id_ + "_empty.png";
-//                cv::Mat mask_image = cv::imread( mask_image_path, CV_LOAD_IMAGE_GRAYSCALE );
-                cv::Mat empty_image = cv::imread( empty_image_path, CV_LOAD_IMAGE_COLOR );
-                cv::imshow("xtion_rgb", rgb_image);
-//                cv::imshow( "empty_image", empty_image );
-//                cv::imshow( "xtion_rgb_mask", xtion_rgb_mask );
-//                cv::waitKey(0);
-                kdr_.load_sensor_data( rgb_image );
-                kdr_.load_info( empty_image, xtion_rgb_mask );
+                cv::Mat depth_image = data->xtion_depth_ptr->image.clone();
+                cv::Mat empty_image = cv::imread( string(mask_dir_+"/"+srv_bin_id_+"_empty.png"), CV_LOAD_IMAGE_COLOR );
+                cv::Mat empty_depth_image = cv::imread( string(mask_dir_+"/"+srv_bin_id_+"_depth_empty.png"), CV_LOAD_IMAGE_ANYDEPTH );
+
+
+
+                kdr_.load_sensor_data( rgb_image, depth_image );
+                kdr_.load_info( empty_image, xtion_rgb_mask, empty_depth_image );
                 kdr_.set_env_configuration( srv_object_name_, srv_bin_contents_ );
                 vector<pair<string, vector<cv::Point> > > kd_results = kdr_.process();
 
@@ -349,7 +342,6 @@ void OfflineRecogniser::process() {
                 sensor_mutex_.lock();
                 sensor_empty_ = true;
                 sensor_mutex_.unlock();
-                cout << "\n-------------------------------\n";
             }
         }
 

@@ -218,4 +218,58 @@ void display_clusters( const cv::Mat & image, const vector<MatchRGB> & matches, 
 vector<pair<string, int> > deprecate_bin_contents(const vector<string> &bin_contents);
 
 
+template<int N>
+struct Pt {
+    float p[N];
+
+
+    Pt<N>& init(float *pt) { memcpy( p, pt, N*sizeof(float) ); return *this; }
+
+    template<typename T> Pt<N>& init(T p0) { p[0]=p0; return *this; };
+    template<typename T> Pt<N>& init(T p0, T p1) { p[0]=p0; p[1]=p1; return *this; };
+    template<typename T> Pt<N>& init(T p0, T p1, T p2 ) { p[0]=p0; p[1]=p1; p[2]=p2; return *this; };
+    template<typename T> Pt<N>& init(T p0, T p1, T p2, T p3 ) { p[0]=p0; p[1]=p1; p[2]=p2; p[3]=p3; return *this; };
+
+    float& operator[] (int n) { return p[n]; }
+    const float& operator[] (int n) const { return p[n]; }
+
+    operator float *() { return p; }
+    operator const float *() const { return p; }
+
+    bool operator< ( const Pt<N> &pt ) const { for(int x=0; x<N; x++) if((*this)[x]!=pt[x]) return (*this)[x]<pt[x]; return false; }
+    bool operator==( const Pt<N> &pt ) const { for(int x=0; x<N; x++) if((*this)[x]!=pt[x]) return false; return true; }
+
+    Pt<N>& operator*= ( const Pt<N> &pt ) { for(int x=0; x<N; x++) (*this)[x]*=pt[x]; return *this; }
+    Pt<N>& operator/= ( const Pt<N> &pt ) { for(int x=0; x<N; x++) (*this)[x]/=pt[x]; return *this; }
+    Pt<N>& operator+= ( const Pt<N> &pt ) { for(int x=0; x<N; x++) (*this)[x]+=pt[x]; return *this; }
+    Pt<N>& operator-= ( const Pt<N> &pt ) { for(int x=0; x<N; x++) (*this)[x]-=pt[x]; return *this; }
+
+    template<typename T> Pt<N>& operator*= ( const T f ) { for(int x=0; x<N; x++) (*this)[x]*=f; return *this; }
+    template<typename T> Pt<N>& operator/= ( const T f ) { for(int x=0; x<N; x++) (*this)[x]/=f; return *this; }
+    template<typename T> Pt<N>& operator+= ( const T f ) { for(int x=0; x<N; x++) (*this)[x]+=f; return *this; }
+    template<typename T> Pt<N>& operator-= ( const T f ) { for(int x=0; x<N; x++) (*this)[x]-=f; return *this; }
+
+    template<typename T> Pt<N> operator*( const T &pt ) const {  Pt<N> r=*this; return r*=pt; }
+    template<typename T> Pt<N> operator/( const T &pt ) const {  Pt<N> r=*this; return r/=pt; }
+    template<typename T> Pt<N> operator+( const T &pt ) const {  Pt<N> r=*this; return r+=pt; }
+    template<typename T> Pt<N> operator-( const T &pt ) const {  Pt<N> r=*this; return r-=pt; }
+
+    float sqEuclDist( const Pt<N> &pt ) const {	float d, r=0; for(int x=0; x<N; r+=d*d, x++) d=pt[x]-(*this)[x]; return r; }
+    float euclDist( const Pt<N> &pt ) const { return sqrt(sqEuclDist(pt)); }
+    Pt<N>& norm() { float d=0; for(int x=0; x<N; x++) d+=(*this)[x]*(*this)[x]; d=1./sqrt(d); for(int x=0; x<N; x++) (*this)[x]*=d; return *this; }
+
+    friend ostream& operator<< (ostream &out, const Pt<N> &pt) { out<<"["; for(int x=0; x<N; x++) out<<(x==0?"":" ")<<pt[x]; out<<"]"; return out; }
+    friend istream& operator>> (istream &in, Pt<N> &pt) { for(int x=0; x<N; x++) in>>pt[x]; return in; }
+
+    Pt<N> &min( Pt<N> &p2) { for(int x=0; x<N; x++) (*this)[x]=std::min((*this)[x], p2[x]); return *this;}
+    Pt<N> &max( Pt<N> &p2) { for(int x=0; x<N; x++) (*this)[x]=std::max((*this)[x], p2[x]); return *this;}
+
+};
+
+
+list< Pt<2> > getConvexHull( vector< Pt<2> > &points );
+
+
+vector<cv::Point> get_convex_hull( vector<cv::Point> & points );
+
 #endif // UTILS_H

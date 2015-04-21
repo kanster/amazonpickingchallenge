@@ -3,6 +3,7 @@
 #include "include/helpfun/kd_recogniser.h"
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/filters/extract_indices.h>
+#include <opencv2/imgproc/imgproc.hpp>
 
 KDRecogniser::SlidingWindowDetector::SlidingWindowDetector() {
 }
@@ -150,17 +151,6 @@ cv::Mat KDRecogniser::from_score( MatrixXf score, int scale ) {
 KDRecogniser::KDRecogniser(){
 }
 
-KDRecogniser::KDRecogniser(cv::Mat rgb_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud) {
-    this->rgb_image_ = rgb_image;
-    this->cloud_.reset( new pcl::PointCloud<pcl::PointXYZRGB> () );
-    this->cloud_ = cloud;
-}
-
-
-KDRecogniser::KDRecogniser(cv::Mat rgb_image) {
-    this->rgb_image_ = rgb_image;
-}
-
 
 void KDRecogniser::load_sensor_data(cv::Mat rgb_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud) {
     this->rgb_image_ = rgb_image;
@@ -168,6 +158,11 @@ void KDRecogniser::load_sensor_data(cv::Mat rgb_image, pcl::PointCloud<pcl::Poin
     this->cloud_ = cloud;
 }
 
+
+void KDRecogniser::load_sensor_data(cv::Mat rgb_image, cv::Mat depth_image) {
+    this->rgb_image_ = rgb_image;
+    this->depth_image_ = depth_image;
+}
 
 void KDRecogniser::load_sensor_data(cv::Mat rgb_image) {
     this->rgb_image_ = rgb_image;
@@ -197,6 +192,12 @@ void KDRecogniser::load_info(cv::Mat empty_image, cv::Mat mask_image, pcl::Point
     this->empty_cloud_ = empty_cloud;
 }
 
+void KDRecogniser::load_info(cv::Mat empty_image, cv::Mat mask_image, cv::Mat empty_depth_image) {
+    this->empty_image_ = empty_image;
+    this->mask_image_ = mask_image;
+    this->empty_depth_ = empty_depth_image;
+}
+
 void KDRecogniser::load_info(cv::Mat empty_image, cv::Mat mask_image) {
     this->empty_image_ = empty_image;
     this->mask_image_ = mask_image;
@@ -211,7 +212,6 @@ void KDRecogniser::init_libkdes(string svm_model_name, string kdes_model_name, s
     model_folder_ = model_folder;
     model_ = model;
     model_type_ = model_type;
-
     swd_ = new SlidingWindowDetector( model_, svm_model_name_, kdes_model_name_, model_folder_, model_type_ );
 
 }
@@ -376,6 +376,7 @@ vector<pair<string, vector<cv::Point> > > KDRecogniser::process( bool use_rgb ) 
     }
     */
 
+
     for ( int pi = 0; pi < (int)scores_for_contents.front().size(); ++ pi ){
         vector<MatrixXf> scores_patch;
         for ( int oi = 0; oi < (int)scores_for_contents.size(); ++ oi ) {
@@ -401,14 +402,30 @@ vector<pair<string, vector<cv::Point> > > KDRecogniser::process( bool use_rgb ) 
     }
 
 
-
-
-
-
-
     // find maximum response in each item
     // 1st vector: each item, 2nd vector: each patch
-//    cout << "size: " << scores_for_contents.size() << ", " << scores_for_contents.front().size() << endl;
+
+    // convert depth image into binary image
+
+    if ( this->depth_image_.type() != 5 ) {
+        cv::Mat new_depth_image( this->depth_image_.rows, this->depth_image_.cols, CV_32FC1 );
+        for ( int y = 0; y < this->depth_image_.rows; ++ y )
+            for ( int x = 0; x < this->depth_image_.cols; ++ x )
+                new_depth_image.at<float>(y,x) = static_cast<float>(this->depth_image_.at<unsigned short>(y,x));
+        this->depth_image_.release();
+        this->depth_image_ = new_depth_image.clone();
+        new_depth_image.release();
+    }
+
+    cv::Mat bin_depth_image( this->depth_image_.rows, this->depth_image_.cols, CV_8UC1, cv::Scalar(0) );
+    for ( int y = 0; y < bin_depth_image.rows; ++ y )
+        for ( int x = 0; x < bin_depth_image.cols; ++ x )
+            if ( this->depth_image_.at<float>(y,x) > 0 )
+                if ( abs(this->depth_image_.at<float>(y,x)-
+                         this->empty_depth_.at<unsigned short>(y,x)) > 3 )
+                    bin_depth_image.at<uchar>(y,x) = static_cast<unsigned char>(255);
+//    cv::imshow( "bin_depth_image", bin_depth_image );
+
     vector< vector<pair<float, cv::Point2i> > > scores_pt( scores_for_contents.size() );
     for ( int i = 0; i < (int)scores_for_contents.size(); ++ i ) {
         for ( int j = 0; j < (int)scores_for_contents[i].size(); ++ j ) {
@@ -430,7 +447,6 @@ vector<pair<string, vector<cv::Point> > > KDRecogniser::process( bool use_rgb ) 
             }
         }
 
-
         sort(scores_pt[i].begin(), scores_pt[i].end(),
              boost::bind(&pair<float, cv::Point2i>::first, _1) > boost::bind(&pair<float, cv::Point2i>::first, _2));
 
@@ -443,12 +459,46 @@ vector<pair<string, vector<cv::Point> > > KDRecogniser::process( bool use_rgb ) 
             pts.push_back( cv::Point(scores_pt[i][j].second.x, scores_pt[i][j].second.y+patch_size) );
             pts.push_back( cv::Point(scores_pt[i][j].second.x+patch_size, scores_pt[i][j].second.y+patch_size) );
             pts.push_back( cv::Point(scores_pt[i][j].second.x+patch_size, scores_pt[i][j].second.y) );
+
             // draw rectangle on image
             cv::Mat detected_rect(this->rgb_image_.rows, this->rgb_image_.cols, CV_8UC1, cv::Scalar(0));
             cv::rectangle( detected_rect, cv::Rect(scores_pt[i][j].second.x, scores_pt[i][j].second.y, patch_size, patch_size), cv::Scalar(255), CV_FILLED );
             cv::bitwise_and( this->mask_image_, detected_rect, detected_rect );
 
-            recog_objects_.push_back( make_pair(object_name, pts) );
+            vector<cv::Point> convex_pts;
+            if ( !this->empty_depth_.empty() && !this->depth_image_.empty() ) {
+
+                convex_pts.clear();
+                cv::bitwise_and( detected_rect, bin_depth_image, detected_rect );
+
+                vector< vector<cv::Point2i> > blobs;
+                find_blobs( detected_rect, blobs);
+                int max_blob_idx;
+                int max_blob_sz = 0;
+                for ( int ii = 0; ii < (int)blobs.size(); ++ ii ) {
+                    if ( (int)blobs[ii].size() > max_blob_sz ) {
+                        max_blob_idx = ii;
+                        max_blob_sz = (int)blobs[ii].size();
+                    }
+                }
+
+                detected_rect = cv::Mat( detected_rect.rows, detected_rect.cols, CV_8UC1, cv::Scalar(0) );
+                for ( int ii = 0; ii < (int)blobs[max_blob_idx].size(); ++ ii )
+                    detected_rect.at<uchar>( blobs[max_blob_idx][ii].y, blobs[max_blob_idx][ii].x )
+                            = static_cast<unsigned char>(255);
+                // simple edge detector
+                vector<cv::Point> contour;
+                for ( int y = 1; y < detected_rect.rows-1; ++ y )
+                    for ( int x = 1; x < detected_rect.cols-1; ++ x )
+                        if ( detected_rect.at<uchar>(y,x) > 0 )
+                            if ( detected_rect.at<uchar>(y+1,x) == 0 ||
+                                 detected_rect.at<uchar>(y-1,x) == 0 ||
+                                 detected_rect.at<uchar>(y,x+1) == 0 ||
+                                 detected_rect.at<uchar>(y,x-1) == 0)
+                                contour.push_back( cv::Point(x, y) );
+                convex_pts = get_convex_hull( contour );
+            }
+            recog_objects_.push_back( make_pair(object_name, convex_pts) );
         }
     }
 

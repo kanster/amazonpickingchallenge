@@ -59,11 +59,13 @@ private:
 
     // pri-collect information
     cv::Mat empty_image_;
+    cv::Mat empty_depth_;
     cv::Mat mask_image_;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr empty_cloud_;
 
     // input sensor information
     cv::Mat rgb_image_;
+    cv::Mat depth_image_;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_;
 
     // sliding box settings
@@ -82,15 +84,15 @@ private:
 public:
     KDRecogniser();
 
-    KDRecogniser( cv::Mat rgb_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
-
-    KDRecogniser( cv::Mat rgb_image );
-
     void load_sensor_data(cv::Mat rgb_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
+
+    void load_sensor_data(cv::Mat rgb_image, cv::Mat depth_image);
 
     void load_sensor_data( cv::Mat rgb_image );
 
     void load_info( cv::Mat empty_image, cv::Mat mask_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr empty_cloud );
+
+    void load_info( cv::Mat empty_image, cv::Mat mask_image, cv::Mat empty_depth_image );
 
     void load_info( cv::Mat empty_image, cv::Mat mask_image );
 
