@@ -1,0 +1,20 @@
+<package>
+  <description brief="eblearn_data_writer">
+
+     eblearn_data_writer
+
+  </description>
+  <author>kanzhi</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/eblearn_data_writer</url>
+  <depend package="sensor_msgs"/>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="opencv2"/>
+  <depend package="image_transport"/>
+  <depend package="cv_bridge"/>
+
+</package>
+
+
