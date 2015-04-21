@@ -12,21 +12,13 @@
 
 Normally, I am more used to run ros package directly using binray file instead of `rosrun <package name> <binary name>`.
 
-1. Open a terminal, go to **data_publisher**, `./bin/data_publisher -d ../data/ -n 2`
-2. Open another terminal, go to **recogniser**, `./bin/offline_recogniser -dir ../data/`
+1. Test Kernel Descriptor at first:
+	`../bin/kd_test ../data/201504174639/xtion_rgb_1.png ../data/201504174639/bin_A_empty.png ../data/201504174639/mask_xtion_rgb_bin_A.png feline_greenies_dental_treats mead_index_cards expo_dry_erase_board_eraser kong_duck_dog_toy`
+	<binary file> <sensor rgb image> <empty shelf image> <mask bin image> <items in this bin>
+2. Test offline recogniser:
+	`../bin/offline_recogniser -j ../data/201504171107.json -mask ../data/201504174639/ -method ../data/method.txt -kd ../data/kd_models/`
+	`../bin/pseudo_request -d ../data/201504174639/ -n 12 -j ../data/201504171107.json`
 
-### Simple explanation
-
-The **data_publisher** will load the collected data in the given directory frame by frame iteratively. In the repo, there are only two frame of data, here we assume the frame 1 is from `bin_A` and frame 2 is from `bin_B`, check the **recogniser/data/amazon.json** for detail environment configuration of the shelf. Based on the sending request from **data_publisher**, to be specifically, the frame index in the request, **offline_recogniser** is able to know what the id of the bin and further obtain the items in the bin. Based on the **recogniser/data/methods.txt**, the **offline_recogniser** which **recogniser** (here we mean rgb or rgbd) it will use to recogniser the item.
-
-Some screenshot of the results are:
-![](http://s5.sinaimg.cn/middle/001WoJ8ogy6QNoF9qyo44&690)
-![](http://s3.sinaimg.cn/middle/001WoJ8ogy6QNoF8m7Ec2&690)
-
-
-##Development Log:
-
-17/03/2015
 
 Object recognition status:
 
@@ -69,33 +61,3 @@ Detailed explanations:
 	2. *feline_greenies_dental_treats* is non-rigid, however, this item can be recognised only if we don't bend the item too much. **model updated**
 	3. *elmers_washable_no_run_school_glue* can be recognised, the model will be updated lated this week. **model updated**
 	4. *dr_browns_bottle_brush* can roughly recognised using the texture on the paper board
-
-08/03/2015: 
-
-`data_writer` can save following topic information to disk by Press `c` button:
-
-  * rgb image from xtion
-  * rgb camera info from xtion, only projection matrix and distortion vector are saved to *yml* file, also for other camera info
-  * depth image from xtion, 16bit
-  * depth camera info from xtion
-  * rgb point cloud from xtion
-  * rgb image from rgb camera
-  * rgb camera info from rgb camera
-  
-`data_publisher` can publish saved data to specific topics. This is used as the bridge between sensor data and `recogniser`, the topic name are
-
-  * /xtion/rgb/image
-  * /xtion/rgb/camera_info
-  * /xtion/depth/image
-  * /xtion/depth/camera_info
-  * /xtion/depth/points
-  * /camera/image
-  * /camera/camera_info
-
-09/03/2015
-
-Communication problem between `data_publisher` and `recogniser` is solved.
-The next frame of sensor data input will only be published if the `recogniser` send a feedback.
-
-
-
