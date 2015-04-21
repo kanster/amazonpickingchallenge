@@ -71,7 +71,7 @@ private:
     int bbox_size_;
 
     // output results
-    vector< pair<string, cv::Rect> >  recog_objects_;
+    vector< pair<string, vector<cv::Point> > >  recog_objects_;
 
     KernelDescManager * kdes_;
 
@@ -98,11 +98,9 @@ public:
 
     void init_libkdes( string svm_model_name, string kdes_model_name, string model_folder, string model, unsigned int model_type );
 
-    vector<pair<string, cv::Rect> > process( bool use_rgb = true );
+    vector<pair<string, vector<cv::Point> > > process( bool use_rgb = true );
 
     void clear();
-
-    vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr > get_rect_clouds();
 };
 
 

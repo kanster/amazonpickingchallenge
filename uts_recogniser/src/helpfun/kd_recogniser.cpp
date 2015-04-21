@@ -139,7 +139,8 @@ cv::Mat KDRecogniser::from_score( MatrixXf score, int scale ) {
     cv::Mat img(score.rows(), score.cols(), CV_8UC1);
     for ( int y = 0; y < img.rows; ++ y )
         for ( int x = 0; x < img.cols; ++ x )
-            img.at<uchar>(y,x) = (int)((score(y,x)+-min)/range*255);
+//            img.at<uchar>(y,x) = (int)((score(y,x)-min)*255);
+            img.at<uchar>(y,x) = (int)((score(y,x)-min)/range*255);
     cv::resize( img, img, cv::Size(img.cols*scale, img.rows*scale), 0, 0, CV_INTER_NN );
     return img;
 }
@@ -217,7 +218,7 @@ void KDRecogniser::init_libkdes(string svm_model_name, string kdes_model_name, s
 
 
 // process
-vector<pair<string, cv::Rect> > KDRecogniser::process( bool use_rgb ) {
+vector<pair<string, vector<cv::Point> > > KDRecogniser::process( bool use_rgb ) {
     // detailed mask image generation using subtraction
     // rgb image to gray scale image conversion
     int threshold = 20;
@@ -309,7 +310,7 @@ vector<pair<string, cv::Rect> > KDRecogniser::process( bool use_rgb ) {
             cv::rectangle( mask_bbox, bbox.first, bbox.second, cv::Scalar::all(255));
         }
     }
-//    cv::imshow( "rectangle", mask_bbox );
+    cv::imshow( "rectangle", mask_bbox );
 
 
 
@@ -328,7 +329,6 @@ vector<pair<string, cv::Rect> > KDRecogniser::process( bool use_rgb ) {
 
     // 1st vector: each item, 2 nd vector each patch
     vector< vector<MatrixXf> > scores_for_contents( objects_n.size() );
-
     int step_size = 16;
     int patch_size = 64;
     IplImage * image = new IplImage(this->rgb_image_);
@@ -353,7 +353,6 @@ vector<pair<string, cv::Rect> > KDRecogniser::process( bool use_rgb ) {
                 MatrixXf score(1,1);
                 score << item_score(j, 0);
                 scores_for_contents[j].push_back(score);
-//                cout << objects_n[j].first << ": " << item_score(j, 0) << endl;
             }
         }
         else {
@@ -364,27 +363,59 @@ vector<pair<string, cv::Rect> > KDRecogniser::process( bool use_rgb ) {
         }
     }
 
+    /*
+    for ( int i = 0; i < (int)scores_for_contents.size(); ++ i ) {
+        for ( int j = 0; j < (int)scores_for_contents[i].size(); ++ j ) {
+            MatrixXf score = scores_for_contents[i][j];
+            cout << score << "\n\n";
+            cv::namedWindow( "score" );
+            cv::Mat score_img = from_score( score, 32 );
+            cv::imshow( "score", score_img );
+            cv::waitKey(0);
+        }
+    }
+    */
+
+    for ( int pi = 0; pi < (int)scores_for_contents.front().size(); ++ pi ){
+        vector<MatrixXf> scores_patch;
+        for ( int oi = 0; oi < (int)scores_for_contents.size(); ++ oi ) {
+            scores_patch.push_back( scores_for_contents[oi][pi] );
+        }
+        // check the size of the scores should be the same
+        int ny = scores_patch.front().rows();
+        int nx = scores_patch.front().cols();
+        vector< pair<float, int> > scores_items;
+        for ( int y = 0; y < ny; ++ y ) {
+            for ( int x = 0; x < nx; ++ x ) {
+                for ( int oi = 0; oi < (int)scores_patch.size(); ++ oi ) {
+                    scores_items.push_back( make_pair(scores_patch[oi](y,x), oi) );
+                }
+                sort(scores_items.begin(), scores_items.end(), boost::bind(&std::pair<float, int>::first, _1) > boost::bind(&std::pair<float, int>::first, _2));
+                // reassign score to the largest in the remaining largest
+                scores_for_contents[scores_items[0].second][pi](y,x) -= scores_items[1].first;
+                for ( int oi = 1; oi < (int)scores_patch.size(); ++ oi )
+                    scores_for_contents[scores_items[oi].second][pi](y,x) -= scores_items[0].first;
+                scores_items.clear();
+            }
+        }
+    }
+
+
+
+
 
 
 
     // find maximum response in each item
     // 1st vector: each item, 2nd vector: each patch
+//    cout << "size: " << scores_for_contents.size() << ", " << scores_for_contents.front().size() << endl;
     vector< vector<pair<float, cv::Point2i> > > scores_pt( scores_for_contents.size() );
-//    cout << "size of contents: " << scores_for_contents.size() << endl;
     for ( int i = 0; i < (int)scores_for_contents.size(); ++ i ) {
         for ( int j = 0; j < (int)scores_for_contents[i].size(); ++ j ) {
             MatrixXf score = scores_for_contents[i][j];
             cv::Point2i startpt = blob_bbox[j].first;
-
-//            CvFont font;
-//            cvInitFont(&font,CV_FONT_HERSHEY_SIMPLEX|CV_FONT_ITALIC, 0.6, 0.6, 0, 1);
-
 //            cv::namedWindow( "score" );
-
 //            cv::Mat score_img = from_score( score, 32 );
-//            cout << score << endl;
-//            string object_name = objects_n[i].first;
-//            cv::putText(score_img, object_name, cvPoint(30,30), CV_FONT_HERSHEY_SIMPLEX|CV_FONT_ITALIC, 0.6 ,cvScalar(255,255,255));
 //            cv::imshow( "score", score_img );
 //            cv::waitKey(0);
 
@@ -394,9 +425,6 @@ vector<pair<string, cv::Rect> > KDRecogniser::process( bool use_rgb ) {
                     cv::Point2i pt;// pt in image space
                     pt.x = startpt.x + x*step_size;
                     pt.y = startpt.y + y*step_size;
-//                    this->rgb_image_.at<cv::Vec3b>(pt.y, pt.x)[0] = 0;
-//                    this->rgb_image_.at<cv::Vec3b>(pt.y, pt.x)[1] = 0;
-//                    this->rgb_image_.at<cv::Vec3b>(pt.y, pt.x)[2] = 255;
                     scores_pt[i].push_back( make_pair(score(y,x), pt) );
                 }
             }
@@ -405,20 +433,29 @@ vector<pair<string, cv::Rect> > KDRecogniser::process( bool use_rgb ) {
 
         sort(scores_pt[i].begin(), scores_pt[i].end(),
              boost::bind(&pair<float, cv::Point2i>::first, _1) > boost::bind(&pair<float, cv::Point2i>::first, _2));
-//        for ( int j = 0; j < (int)scores_pt[i].size(); ++ j ) {
-//            cout << scores_pt[i][j].first << " : " << scores_pt[i][j].second.x << ", " << scores_pt[i][j].second.y << endl;
-//        }
 
-        cv::rectangle( this->rgb_image_, cv::Rect(scores_pt[i][0].second.x, scores_pt[i][0].second.y, patch_size, patch_size), cv::Scalar(0,0,255), 2 );
-//        cv::imshow( "rgb_image", this->rgb_image_ );
         // select top n items according to objects no. in this bin
         int n_objecti = objects_n[i].second;
         for ( int j = 0; j < n_objecti; ++ j ) {
             string object_name = objects_n[i].first;
-            cv::Rect rect( scores_pt[i][j].second.x, scores_pt[i][j].second.y, patch_size, patch_size );
-            recog_objects_.push_back( make_pair(object_name, rect) );
+            vector<cv::Point> pts;
+            pts.push_back( cv::Point(scores_pt[i][j].second.x, scores_pt[i][j].second.y) );
+            pts.push_back( cv::Point(scores_pt[i][j].second.x, scores_pt[i][j].second.y+patch_size) );
+            pts.push_back( cv::Point(scores_pt[i][j].second.x+patch_size, scores_pt[i][j].second.y+patch_size) );
+            pts.push_back( cv::Point(scores_pt[i][j].second.x+patch_size, scores_pt[i][j].second.y) );
+            // draw rectangle on image
+            cv::Mat detected_rect(this->rgb_image_.rows, this->rgb_image_.cols, CV_8UC1, cv::Scalar(0));
+            cv::rectangle( detected_rect, cv::Rect(scores_pt[i][j].second.x, scores_pt[i][j].second.y, patch_size, patch_size), cv::Scalar(255), CV_FILLED );
+            cv::bitwise_and( this->mask_image_, detected_rect, detected_rect );
+
+            recog_objects_.push_back( make_pair(object_name, pts) );
         }
     }
+
+
+
+
+
     return recog_objects_;
 }
 
@@ -427,21 +464,3 @@ void KDRecogniser::clear() {
     recog_objects_.clear();
 }
 
-vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr > KDRecogniser::get_rect_clouds() {
-    // get item bbox
-    vector< pcl::PointCloud<pcl::PointXYZRGB>::Ptr > rect_clouds;
-    vector<int> indices;
-    for ( int i = 0; i < (int)recog_objects_.size(); ++ i ) {
-        cv::Rect & rect = recog_objects_[i].second;
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr rect_cloud( new pcl::PointCloud<pcl::PointXYZRGB>() );
-
-        for ( int y = rect.tl().y; y <= rect.br().y; ++ y )
-            for ( int x = rect.tl().x; x <= rect.br().x; ++ x )
-                indices.push_back( y*cloud_->width+x );
-
-        pcl::copyPointCloud( *cloud_, indices, *rect_cloud );
-        rect_clouds.push_back( rect_cloud );
-        indices.clear();
-    }
-    return rect_clouds;
-}

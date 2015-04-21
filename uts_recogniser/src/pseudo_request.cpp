@@ -105,7 +105,7 @@ public:
         dir_ = dir;
         n_frames_ = n;
         use_pointcloud_ = use_pointcloud;
-
+        recog_completed_ = true;
         recog_server_ = nh.advertiseService( g_recog_srv_name, &DataPublisher::recog_srv_callback, this);
         obj_sub_ = nh.subscribe( g_obj_topic_name, 1, &DataPublisher::recog_callback, this );
 
@@ -302,7 +302,7 @@ public:
                         ROS_ERROR( "Target object: %s, failed to call service target_object", target_req_srv.request.ObjectName.c_str() );
                     }
 
-                    sleep(5);
+                    sleep(3);
 
                     xtion_rgb_pub_.publish( xtion_rgb_msg_ );
                     xtion_rgb_info_pub_.publish( xtion_rgb_info_msg_ );

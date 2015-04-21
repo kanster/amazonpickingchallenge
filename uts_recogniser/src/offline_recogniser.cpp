@@ -22,13 +22,13 @@ const string g_object_srv_name   = "/recog_publish_srv";
 const string g_target_srv_name  = "/data_publish_srv";
 
 // json configuration file
-const string g_json_filename    = "/home/kanzhi/hydro_workspace/amazon_picking_challenge/uts_recogniser/data/amazon.json";
+//const string g_json_filename    = "/home/kanzhi/hydro_workspace/amazon_picking_challenge/uts_recogniser/data/amazon.json";
 
 // object models, xml
-const string g_models_dir       = "/home/kanzhi/hydro_workspace/amazon_picking_challenge/uts_recogniser/data/amazon_models";
+//const string g_models_dir       = "/home/kanzhi/hydro_workspace/amazon_picking_challenge/uts_recogniser/data/amazon_models";
 
 // method configuration
-const string g_method_filename  = "/home/kanzhi/hydro_workspace/amazon_picking_challenge/uts_recogniser/data/method.txt";
+//const string g_method_filename  = "/home/kanzhi/hydro_workspace/amazon_picking_challenge/uts_recogniser/data/method.txt";
 
 const string g_rgb_win_name     = "rgb_image";
 const string g_mask_win_name    = "mask_image";
@@ -289,11 +289,12 @@ void OfflineRecogniser::process() {
                 kdr_.load_sensor_data( rgb_image );
                 kdr_.load_info( empty_image, xtion_rgb_mask );
                 kdr_.set_env_configuration( srv_object_name_, srv_bin_contents_ );
-                vector<pair<string, cv::Rect> > kd_results = kdr_.process();
+                vector<pair<string, vector<cv::Point> > > kd_results = kdr_.process();
 
                 for ( int i = 0; i < (int)kd_results.size(); ++ i ) {
-                    cv::putText( rgb_image, kd_results[i].first, kd_results[i].second.tl(), CV_FONT_HERSHEY_SIMPLEX|CV_FONT_ITALIC, 0.5, cv::Scalar(0,0,255));// int thickness=1, int lineType=8, bool bottomLeftOrigin=false )¶
-                    cv::rectangle( rgb_image, kd_results[i].second, cv::Scalar(255, 0, 0), 2 );
+                    cv::putText( rgb_image, kd_results[i].first, kd_results[i].second[0], CV_FONT_HERSHEY_SIMPLEX|CV_FONT_ITALIC, 0.5, cv::Scalar(0,0,255));
+                    for ( int j = 0; j < (int)kd_results[i].second.size(); ++ j )
+                        cv::line( rgb_image, kd_results[i].second[j], kd_results[i].second[(j+1)%kd_results[i].second.size()], cv::Scalar(255, 0, 255), 2 );
                 }
                 cv::imshow( "bbox_image", rgb_image );
                 cv::waitKey(0);

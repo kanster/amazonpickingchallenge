@@ -42,11 +42,12 @@ int main( int argc, char ** argv ) {
 
 
 
-    vector<pair<string, cv::Rect> > results = kdr.process();
+    vector<pair<string, vector<cv::Point> > > results = kdr.process();
 
     for ( int i = 0; i < (int)results.size(); ++ i ) {
-        cv::putText( rgb_image, results[i].first, results[i].second.tl(), CV_FONT_HERSHEY_SIMPLEX|CV_FONT_ITALIC, 0.5, cv::Scalar(0,0,255));// int thickness=1, int lineType=8, bool bottomLeftOrigin=false )¶
-        cv::rectangle( rgb_image, results[i].second, cv::Scalar(255, 0, 0), 2 );
+        cv::putText( rgb_image, results[i].first, results[i].second[0], CV_FONT_HERSHEY_SIMPLEX|CV_FONT_ITALIC, 0.5, cv::Scalar(0,0,255));
+        for ( int j = 0; j < (int)results[i].second.size(); ++ j )
+            cv::line( rgb_image, results[i].second[j], results[i].second[(j+1)%results[i].second.size()], cv::Scalar(255, 0, 255), 2 );
     }
 
     cv::imshow( "rgb_image", rgb_image );
