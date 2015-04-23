@@ -1,5 +1,14 @@
 #Amazon Picking Challenge
 
+## How to install EBlearn
+The eblearn package is in *uts_recogniser/externals/*. The installation instruction is [here](http://eblearn.sourceforge.net/install.html). Both eblearn core and tools are required to be installed. EBlearn does NOT provide default link file. If EBlearn is installed correct to */usr/include* and */usr/lib*, *eblearn.pc* is able to find EBlearn on your PC.
+
+Please check the EBlearn is installed and tested successfully before compling the updated **uts_recogniser**.
+
+## How to run eblearn test?
+
+`../bin/eblearn_test ../data/eblearn/safety_works_safety_glasses.conf ../data/eblearn/images/boot-fc2_save_2015-04-11-220529-0000.bmp`
+
 ## How to run it?
 
 Normally, I am more used to run ros package directly using binray file instead of `rosrun <package name> <binary name>`.
