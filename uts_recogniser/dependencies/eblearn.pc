@@ -1,0 +1,11 @@
+# This file is used to link EBLearn library, the default directory is in /usr
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+Name: eblearn
+Description: Eblearn is an object-oriented C++ library that implements various machine learning models, including energy-based learning, gradient-based learning for machine composed of multiple heterogeneous modules.
+Version: 1.2
+Requires: 
+Libs: -L${libdir} -lidx -lidxgui -leblearn -leblearngui -leblearntools
+Cflags: -I${includedir} 

@@ -15,7 +15,6 @@
   <depend package="roscpp"/>
   <depend package="rospy"/>
   <depend package="message_filters"/>
-  <depend package="opencv2"/>
   <depend package="image_geometry"/>
   <depend package="pcl_ros"/>
   <depend package="pcl_conversions"/>

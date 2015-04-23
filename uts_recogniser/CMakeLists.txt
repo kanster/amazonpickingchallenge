@@ -185,31 +185,24 @@ rosbuild_link_boost(offline_recogniser thread system filesystem program_options 
 target_link_libraries(offline_recogniser ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES})# ${LAPACK_LIBRARIES})
 target_link_libraries(offline_recogniser ${HELPFUN_LIB} ${KDES_LIB} )
 
-
-#rosbuild_add_executable(yy_test ${PROJECT_SOURCE_DIR}/src/yy_test.cpp)
-#rosbuild_link_boost(yy_test thread system filesystem program_options signals )
-#target_link_libraries(yy_test ${OpenCV_LIBS} ${BLAS_LIBRARIES})# ${LAPACK_LIBRARIES})
-#target_link_libraries(yy_test ${HELPFUN_LIB} ${KDES_LIB} )
-
-
-#rosbuild_add_executable(patch_test ${PROJECT_SOURCE_DIR}/src/patch_test.cpp)
-#rosbuild_link_boost(patch_test thread system filesystem program_options signals )
-#target_link_libraries(patch_test ${OpenCV_LIBS} ${BLAS_LIBRARIES})# ${LAPACK_LIBRARIES})
-#target_link_libraries(patch_test ${HELPFUN_LIB} ${KDES_LIB} )
-
-#rosbuild_add_executable(sift_test ${PROJECT_SOURCE_DIR}/src/sift_test.cpp)
-#rosbuild_link_boost(sift_test thread system filesystem program_options signals )
-#target_link_libraries(sift_test ${OpenCV_LIBS} ${BLAS_LIBRARIES})# ${LAPACK_LIBRARIES})
-#target_link_libraries(sift_test ${HELPFUN_LIB})
-
-
-
 rosbuild_add_executable(kd_test ${PROJECT_SOURCE_DIR}/src/kd_test.cpp)
 rosbuild_link_boost(kd_test thread system filesystem program_options signals )
 target_link_libraries(kd_test ${OpenCV_LIBS} ${BLAS_LIBRARIES})# ${LAPACK_LIBRARIES})
 target_link_libraries(kd_test ${HELPFUN_LIB} ${KDES_LIB} )
 
-
 rosbuild_add_executable( pseudo_request src/pseudo_request.cpp )
+
+
+pkg_check_modules(EBLEARN REQUIRED eblearn)
+set( EBLEARN_LIBRARIES "-leblearn -lidx -leblearntools" )
+message("== EBLEARN LIBS REQUIRED ${EBLEARN_LIBRARIES}" )
+message("== EBLEARN INCLUDE DIRS ${EBLEARN_INCLUDE_DIRS}")
+include_directories( ${EBLEARN_INCLUDE_DIRS} )
+message("== EBLEARN LIB DIRS ${EBLEARN_LIBRARY_DIRS}")
+link_directories( ${EBLEARN_LIBRARY_DIRS} )
+
+rosbuild_add_executable(eblearn_test ${PROJECT_SOURCE_DIR}/src/eblearn_test.cpp)
+target_link_libraries(eblearn_test ${OpenCV_LIBS} ${EBLEARN_LIBRARIES})
+rosbuild_link_boost(eblearn_test thread system filesystem program_options signals regex )
 
 
