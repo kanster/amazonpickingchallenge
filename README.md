@@ -7,7 +7,7 @@ Please check the EBlearn is installed and tested successfully before compling th
 
 ## How to run eblearn test?
 
-`../bin/eblearn_test ../data/eblearn/safety_works_safety_glasses.conf ../data/eblearn/images/boot-fc2_save_2015-04-11-220529-0000.bmp`
+`.../bin/eblearn_test ../data/eblearn/images/kong_duck_dog_toy.bmp ../data/eblearn/ kygen_squeakin_eggs_plush_puppies kong_duck_dog_toy`
 
 ## How to run it?
 
