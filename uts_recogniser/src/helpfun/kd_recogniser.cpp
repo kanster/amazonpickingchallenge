@@ -317,7 +317,7 @@ vector<pair<string, vector<cv::Point> > > KDRecogniser::process( bool use_rgb ) 
     // generate indices for items
     // retrieve item classes
     vector<string> svm_models_list = *(this->swd_->get_models_list());
-    vector<pair<string, int> > objects_n = deprecate_bin_contents( this->target_bin_content_ );
+    vector<pair<string, int> > objects_n = duplicated_bin_contents( this->target_bin_content_ );
 
     vector<int> content_in_svm_indices;
     for ( int i = 0; i < (int)objects_n.size(); ++ i ) {

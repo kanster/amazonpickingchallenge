@@ -392,7 +392,7 @@ void display_clusters(const cv::Mat &image, const vector<MatchRGB> &matches, vec
 
 
 // deprecate item and numbers
-vector<pair<string, int> > deprecate_bin_contents(const vector<string> &bin_contents) {
+vector<pair<string, int> > duplicated_bin_contents(const vector<string> &bin_contents) {
     map<string, int> items_map;
     for ( int i = 0; i < (int)bin_contents.size(); ++ i ) {
         if ( items_map.find( bin_contents[i] ) == items_map.end() )

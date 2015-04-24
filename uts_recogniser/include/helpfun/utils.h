@@ -215,7 +215,7 @@ void display_clusters( const cv::Mat & image, const vector<MatchRGB> & matches, 
 
 
 // find apperance times in the bin contents
-vector<pair<string, int> > deprecate_bin_contents(const vector<string> &bin_contents);
+vector<pair<string, int> > duplicated_bin_contents(const vector<string> &bin_contents);
 
 
 template<int N>
