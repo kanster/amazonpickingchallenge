@@ -83,6 +83,17 @@ include_directories( ${MATIO_INCLUDE_DIRS} )
 message("== MATIO LIB DIRS ${MATIO_LIBRARY_DIRS}")
 link_directories( ${MATIO_LIBRARY_DIRS} )
 
+
+
+pkg_check_modules(EBLEARN REQUIRED eblearn)
+set( EBLEARN_LIBRARIES "-leblearn -lidx -leblearntools" )
+message("== EBLEARN LIBS REQUIRED ${EBLEARN_LIBRARIES}" )
+message("== EBLEARN INCLUDE DIRS ${EBLEARN_INCLUDE_DIRS}")
+include_directories( ${EBLEARN_INCLUDE_DIRS} )
+message("== EBLEARN LIB DIRS ${EBLEARN_LIBRARY_DIRS}")
+link_directories( ${EBLEARN_LIBRARY_DIRS} )
+
+
 find_package(PCL 1.7.0 REQUIRED)
 if(PCL_FOUND)
     message("== PCL INCLUDE DIRS ${PCL_INCLUDE_DIRS}")
@@ -137,6 +148,7 @@ set( HELPFUN_H
   ${PROJECT_SOURCE_DIR}/include/helpfun/utils.h
   ${PROJECT_SOURCE_DIR}/include/helpfun/rgb_recogniser.h
   ${PROJECT_SOURCE_DIR}/include/helpfun/rgbd_recogniser.h
+  ${PROJECT_SOURCE_DIR}/include/helpfun/eblearn_recogniser.h
   ${PROJECT_SOURCE_DIR}/include/helpfun/kd_recogniser.h
   ${PROJECT_SOURCE_DIR}/include/helpfun/json_parser.hpp
 )
@@ -151,6 +163,7 @@ set( HELPFUN_CPP
   ${PROJECT_SOURCE_DIR}/src/helpfun/svd_pose_estimator.cpp
   ${PROJECT_SOURCE_DIR}/src/helpfun/rgb_recogniser.cpp
   ${PROJECT_SOURCE_DIR}/src/helpfun/rgbd_recogniser.cpp
+  ${PROJECT_SOURCE_DIR}/src/helpfun/eblearn_recogniser.cpp
   ${PROJECT_SOURCE_DIR}/src/helpfun/kd_recogniser.cpp
   ${PROJECT_SOURCE_DIR}/src/helpfun/utils.cpp
 )
@@ -159,7 +172,7 @@ set( HELPFUN_CPP
 # build helpfun library
 set( HELPFUN_LIB helpfun )
 add_library( ${HELPFUN_LIB} STATIC ${HELPFUN_H} ${HELPFUN_CPP} )
-target_link_libraries( ${HELPFUN_LIB} ${PCL_LIBRARIES} ${OpenCV_LIBS}
+target_link_libraries( ${HELPFUN_LIB} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${EBLEARN_LIBRARIES}
   ${CMAKE_SOURCE_DIR}/dependencies/libANN.a
   ${CMAKE_SOURCE_DIR}/dependencies/liblevmar.a
   ${CMAKE_SOURCE_DIR}/dependencies/libsiftfast.a )
@@ -193,16 +206,8 @@ target_link_libraries(kd_test ${HELPFUN_LIB} ${KDES_LIB} )
 rosbuild_add_executable( pseudo_request src/pseudo_request.cpp )
 
 
-pkg_check_modules(EBLEARN REQUIRED eblearn)
-set( EBLEARN_LIBRARIES "-leblearn -lidx -leblearntools" )
-message("== EBLEARN LIBS REQUIRED ${EBLEARN_LIBRARIES}" )
-message("== EBLEARN INCLUDE DIRS ${EBLEARN_INCLUDE_DIRS}")
-include_directories( ${EBLEARN_INCLUDE_DIRS} )
-message("== EBLEARN LIB DIRS ${EBLEARN_LIBRARY_DIRS}")
-link_directories( ${EBLEARN_LIBRARY_DIRS} )
-
 rosbuild_add_executable(eblearn_test ${PROJECT_SOURCE_DIR}/src/eblearn_test.cpp)
-target_link_libraries(eblearn_test ${OpenCV_LIBS} ${EBLEARN_LIBRARIES})
+target_link_libraries(eblearn_test ${OpenCV_LIBS} ${EBLEARN_LIBRARIES} ${HELPFUN_LIB})
 rosbuild_link_boost(eblearn_test thread system filesystem program_options signals regex )
 
 
