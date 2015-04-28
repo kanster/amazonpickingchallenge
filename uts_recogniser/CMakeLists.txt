@@ -182,7 +182,6 @@ target_link_libraries( ${HELPFUN_LIB} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${EBLEARN_
 rosbuild_add_boost_directories()
 
 rosbuild_add_executable(${PROJECT_NAME}
-                        ${PROJECT_SOURCE_DIR}/src/main.cpp
                         ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp
                         ${PROJECT_SOURCE_DIR}/include/uts_recogniser.h)
 

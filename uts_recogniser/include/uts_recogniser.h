@@ -4,6 +4,7 @@
 #include "include/helpfun/json_parser.hpp"
 #include "include/helpfun/rgbd_recogniser.h"
 #include "include/helpfun/rgb_recogniser.h"
+#include "include/helpfun/kd_recogniser.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -24,10 +25,17 @@
 #include <std_msgs/Int8.h>
 #include <std_msgs/String.h>
 
+#include "apc_msgs/ObjectPose.h"
+#include "apc_msgs/ObjectPoseList.h"
 
-#include "apc_msgs/Enable.h"
+#include "apc_msgs/Object.h"
+#include "apc_msgs/BinObjects.h"
+#include "apc_msgs/RowBinObjects.h"
+
 #include "apc_msgs/TargetRequest.h"
-#include "apc_msgs/BinsIndices.h"
+
+#include "apc_msgs/DataPublish.h"
+#include "apc_msgs/RecogStatus.h"
 
 
 #include <boost/algorithm/string.hpp>
@@ -56,47 +64,36 @@ private:
     typedef enum{RGBD_RECOG, RGB_RECOG, KD_RECOG} RecogMethod;
 
     // sync policy of xtion and camera
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image
-    , sensor_msgs::CameraInfo
-    , sensor_msgs::Image
-    , sensor_msgs::CameraInfo
-    , sensor_msgs::PointCloud2
-    , sensor_msgs::Image
-    , sensor_msgs::CameraInfo
-    > sensor_sync_policy;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::PointCloud2> sensor_sync_policy;
+
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo> no_cloud_sensor_sync_policy;
 
     // sensor data from xtion and camera
     struct SensorData {
-        // data from xtion
         cv_bridge::CvImagePtr xtion_rgb_ptr;
         cv_bridge::CvImagePtr xtion_depth_ptr;
+        // PointType is set to be PointXYZRGB in utils.h
         typename pcl::PointCloud<PointType>::Ptr xtion_cloud_ptr;
 
         // data from rgb image
         cv_bridge::CvImagePtr camera_rgb_ptr;
 
         // xtion availability
-        bool xtion_info;
-    };
-
-    // target item from request
-    struct TargetItem {
-        int  target_index;
-        string  target_name;
-        vector<int> removed_items_indices;
+        bool use_cloud;
     };
 
     // methods for all working order item
     struct Item{
         string object_name;
-        RecogMethod method;
+        string method;
     };
 
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     // constructor and destructor
-    UTSRecogniser( ros::NodeHandle & nh );
+    UTSRecogniser( ros::NodeHandle & nh, string json_file, string method_file, string kd_dir, string mask_dir, bool use_cloud = false );
+
     ~UTSRecogniser();
 
     // main processing function
@@ -107,16 +104,21 @@ public:
                           const sensor_msgs::CameraInfoConstPtr & rgb_image_info,
                           const sensor_msgs::ImageConstPtr & depth_image_msg,
                           const sensor_msgs::CameraInfoConstPtr & depth_image_info,
-                          const sensor_msgs::PointCloud2ConstPtr & cloud_ptr_msg,
                           const sensor_msgs::ImageConstPtr & camera_image_msg,
-                          const sensor_msgs::CameraInfoConstPtr & camera_image_info );
+                          const sensor_msgs::CameraInfoConstPtr & camera_image_info,
+                          const sensor_msgs::PointCloud2ConstPtr & cloud_ptr_msg );
+
+    // sensor callback without pcd file
+    void sensor_callback_no_cloud(const sensor_msgs::ImageConstPtr &rgb_image_msg,
+                         const sensor_msgs::CameraInfoConstPtr &rgb_image_info,
+                         const sensor_msgs::ImageConstPtr &depth_image_msg,
+                         const sensor_msgs::CameraInfoConstPtr &depth_image_info,
+                         const sensor_msgs::ImageConstPtr &camera_image_msg,
+                         const sensor_msgs::CameraInfoConstPtr &camera_image_info);
 
     // target service callback
-//    bool target_srv_callback( apc_msgs::TargetRequest::Request & req,
-//                              apc_msgs::TargetRequest::Response & resp);
-
-    bool target_srv_callback( apc_msgs::BinsIndices::Request & req,
-                              apc_msgs::BinsIndices::Response & resp);
+    bool target_srv_callback( apc_msgs::TargetRequest::Request & req,
+                              apc_msgs::TargetRequest::Response & resp);
 
 
 private:
@@ -130,6 +132,7 @@ private:
 private:
     // variables
     boost::shared_ptr<message_filters::Synchronizer<sensor_sync_policy> > m_sensor_sync_;
+    boost::shared_ptr<message_filters::Synchronizer<no_cloud_sensor_sync_policy> > m_no_cloud_sensor_sync_;
 
     // camera info
     image_geometry::PinholeCameraModel xtion_rgb_model_;
@@ -141,6 +144,7 @@ private:
     image_transport::Publisher      image_pub_;         // recognition result, areas
 
     ros::Publisher recog_pub_;                  // recognition result publisher
+    ros::ServiceClient recog_client_;           // recognition result notification
 
     string xtion_rgb_topic_;
     string xtion_rgb_info_topic_;
@@ -159,35 +163,47 @@ private:
     message_filters::Subscriber<sensor_msgs::CameraInfo>    camera_rgb_info_sub_;
 
     // buffer data and mutex
-    SensorData  sensor_data_;
-    SensorData *sensor_data_ptr_;
-    SensorData *imshow_data_ptr_;
-    SensorData  d_buf_[2];
-    unsigned int cindex_;
+    SensorData sensor_data_;
+
+    SensorData  *sensor_data_ptr_;
 
     bool        sensor_empty_;
     boost::mutex sensor_mutex_;
     boost::condition_variable sensor_cond_;
 
     // unique lock
-    vector<string> target_bins_name_;
-
-    TargetItem  target_item_;
     bool        target_received_;
     bool        image_captured_;
     boost::mutex      srvc_mutex_;
     int         target_count_;  // id for the request
-    boost::condition_variable target_cond_;
-
 
     bool recogniser_done_;      // recogniser is finished
     bool recogniser_success_;   // recogniser is success
 
+
     // configuration file
     // json configuration input
     string json_filename_;
-    map< string, vector<string> > bin_contents_;
-    vector< pair<string, string> > work_order_;
+//    map< string, vector<string> > bin_contents_;
+//    vector< pair<string, string> > work_order_;
+
+    bool use_cloud_;
+    string mask_dir_;
+
+    // target request
+    string srv_bin_id_;
+    string srv_object_name_;
+    vector<string> srv_bin_contents_;
+    int srv_object_index_;
+    vector<int> srv_rm_object_indices_;
+
+    string kd_dir_;
+    KDRecogniser kdr_;
+
+
+    // target item index
+    int data_index_;
+    string data_dir_;
 
     // methods configuration file
     map<string, RecogMethod> methods_; // 1 -> object name, 2 -> method
@@ -196,7 +212,7 @@ private:
     vector<Item> items_;
 
     // Recognition method
-    RecogMethod reco_method_;
+    string reco_method_;
 
     boost::thread process_thread_;
 

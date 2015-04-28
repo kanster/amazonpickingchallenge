@@ -13,7 +13,7 @@ int main( int argc, char ** argv ) {
     ebr.set_conf_dir( string(argv[2]) );
 
     vector<string> items;
-    for ( int i = 3; i < argc; ++ i )
+    for ( int i = 3; i < argc-1; ++ i )
         items.push_back( string(argv[i]) );
     ebr.set_env_configuration( items[0], items );
 
@@ -25,6 +25,8 @@ int main( int argc, char ** argv ) {
     }
 
     cv::imshow( "rgb_image", rgb_image );
+    string results_path = string(argv[argc-1]);
+    cv::imwrite( results_path, rgb_image );
     cv::waitKey(0);
 }
 
