@@ -186,9 +186,9 @@ private:
     string json_filename_;
 //    map< string, vector<string> > bin_contents_;
 //    vector< pair<string, string> > work_order_;
-
     bool use_cloud_;
     string mask_dir_;
+    string method_path_;
 
     // target request
     string srv_bin_id_;

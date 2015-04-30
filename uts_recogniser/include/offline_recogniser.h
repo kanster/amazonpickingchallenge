@@ -5,6 +5,7 @@
 #include "include/helpfun/rgbd_recogniser.h"
 #include "include/helpfun/rgb_recogniser.h"
 #include "include/helpfun/kd_recogniser.h"
+#include "include/helpfun/eblearn_recogniser.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -34,6 +35,9 @@
 
 #include "apc_msgs/TargetRequest.h"
 
+// srv for ZJU block mode
+#include "apc_msgs/RecogniseALG.h"
+
 #include "apc_msgs/DataPublish.h"
 #include "apc_msgs/RecogStatus.h"
 
@@ -62,7 +66,7 @@ class OfflineRecogniser{
 
 private:
     // recognition method
-    typedef enum{RGBD_RECOG, RGB_RECOG, KD_RECOG} RecogMethod;
+    typedef enum{RGBD_RECOG, RGB_RECOG} RecogMethod;
 
     // sync policy of xtion and camera
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::PointCloud2> sensor_sync_policy;
@@ -93,7 +97,7 @@ private:
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     // constructor and destructor
-    OfflineRecogniser( ros::NodeHandle & nh, string json_file, string method_file, string kd_dir, string mask_dir, bool use_cloud = false );
+    OfflineRecogniser( ros::NodeHandle & nh );
     ~OfflineRecogniser();
 
     // main processing function
@@ -120,6 +124,12 @@ public:
     bool target_srv_callback( apc_msgs::TargetRequest::Request & req,
                               apc_msgs::TargetRequest::Response & resp);
 
+    // block service callback
+    bool target_srv_callback_block( apc_msgs::RecogniseALG::Request & req,
+                                    apc_msgs::RecogniseALG::Response & resp);
+
+    vector<pair<string, vector<cv::Point> > > kd_eb_opt( vector<pair<string, vector<cv::Point> > > kd_results,
+                                                         vector<pair<string, vector<cv::Point> > > eb_results);
 
 private:
     // recogniser main function of processing
@@ -176,18 +186,29 @@ private:
     boost::mutex      srvc_mutex_;
     int         target_count_;  // id for the request
 
+    /** recognition finish flag and mutex
+      * recogniser_done, finish or not
+      * recogniser_mutex, shared only with block-mode service callback
+      * recogniser_cond, shared only with block-mode service callback
+      */
     bool recogniser_done_;      // recogniser is finished
-    bool recogniser_success_;   // recogniser is success
+    boost::mutex recogniser_mutex_;
+    boost::condition_variable recogniser_cond_;
+
 
 
     // configuration file
     // json configuration input
     string json_filename_;
-//    map< string, vector<string> > bin_contents_;
-//    vector< pair<string, string> > work_order_;
+
+    // topic and srv names
+    string object_topic_name_;
+    string object_srv_name_;
+    string target_srv_name_;
 
     bool use_cloud_;
     string mask_dir_;
+    string method_path_;
 
     // target request
     string srv_bin_id_;
@@ -195,6 +216,10 @@ private:
     vector<string> srv_bin_contents_;
     int srv_object_index_;
     vector<int> srv_rm_object_indices_;
+
+    string eb_dir_;
+
+    string xml_dir_;
 
     string kd_dir_;
     KDRecogniser kdr_;
@@ -218,8 +243,26 @@ private:
     volatile bool exit_flag_;
 
     bool debug_;
+
     // node handler
     ros::NodeHandle * nh_;
+
+
+    /** operation mode and service mode */
+    /** op_mode_ = 1, kernel descriptor only
+      * op_mode_ = 2, eblearn descriptor only
+      * op_mode_ = 3, kernel descriptor + eblearn
+      * op_mode_ = 4, kernel descriptor + eblearn + optional rgb/rgbd
+      */
+    int op_mode_;
+
+    /** srv_mode_ = 1, non-block mode
+      * srv_mode_ = 2, block mode
+      */
+    int srv_mode_;
+
+    /** published topics */
+    apc_msgs::BinObjects bin_objs_;
 };
 
 
