@@ -170,33 +170,33 @@ private:
     cv::Mat disp_image_;
 
 private:
-    void without_pg_callback( const sensor_msgs::ImageConstPtr & xtion_rgb_msg,
-                              const sensor_msgs::CameraInfoConstPtr & xtion_rgb_info_msg,
-                              const sensor_msgs::ImageConstPtr & xtion_depth_msg ) {
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud( new pcl::PointCloud<pcl::PointXYZRGB>() );
-        pcl::fromROSMsg( *cloud_msg, *cloud_ );
+//    void without_pg_callback( const sensor_msgs::ImageConstPtr & xtion_rgb_msg,
+//                              const sensor_msgs::CameraInfoConstPtr & xtion_rgb_info_msg,
+//                              const sensor_msgs::ImageConstPtr & xtion_depth_msg ) {
+//        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud( new pcl::PointCloud<pcl::PointXYZRGB>() );
+//        pcl::fromROSMsg( *cloud_msg, *cloud_ );
 
-        ROS_INFO_ONCE( "Without point grey callback" );
-        SensorData * data = &sensor_data_;
-        // assign value for sensor data
-        data->xtion_rgb = cv_bridge::toCvCopy(xtion_rgb_msg, sensor_msgs::image_encodings::BGR8);
-        data->xtion_rgb_model.fromCameraInfo( xtion_rgb_info_msg );
-        cv::Mat cloud_depth( cloud_->height, cloud_->width, CV_16UC1, cv::Scalar(0) );
-        cv::Mat disp_depth( cloud_->height, cloud_->width, CV_32FC1, cv::Scalar(0) );
+//        ROS_INFO_ONCE( "Without point grey callback" );
+//        SensorData * data = &sensor_data_;
+//        // assign value for sensor data
+//        data->xtion_rgb = cv_bridge::toCvCopy(xtion_rgb_msg, sensor_msgs::image_encodings::BGR8);
+//        data->xtion_rgb_model.fromCameraInfo( xtion_rgb_info_msg );
+//        cv::Mat cloud_depth( cloud_->height, cloud_->width, CV_16UC1, cv::Scalar(0) );
+//        cv::Mat disp_depth( cloud_->height, cloud_->width, CV_32FC1, cv::Scalar(0) );
 
-        for ( int y = 0; y < (int)cloud->height; ++ y ) {
-            for ( int x = 0; x < (int)cloud->width; ++ x ) {
-                pcl::PointXYZRGB & pt = cloud->points[y*cloud->width+x];
-                if ( !pcl_isinf(pt.x) && !pcl_isnan(pt.x) &&
-                     !pcl_isinf(pt.y) && !pcl_isnan(pt.y) &&
-                     !pcl_isinf(pt.z) && !pcl_isnan(pt.z) ) {
-                    cloud_depth_.at<unsigned short>(y,x) = static_cast<unsigned short>(pt.z*1000.0);
-                    disp_depth_.at<float>(y,x) = static_cast<float>(pt.z);
-                }
-            }
-        }
+//        for ( int y = 0; y < (int)cloud->height; ++ y ) {
+//            for ( int x = 0; x < (int)cloud->width; ++ x ) {
+//                pcl::PointXYZRGB & pt = cloud->points[y*cloud->width+x];
+//                if ( !pcl_isinf(pt.x) && !pcl_isnan(pt.x) &&
+//                     !pcl_isinf(pt.y) && !pcl_isnan(pt.y) &&
+//                     !pcl_isinf(pt.z) && !pcl_isnan(pt.z) ) {
+//                    cloud_depth_.at<unsigned short>(y,x) = static_cast<unsigned short>(pt.z*1000.0);
+//                    disp_depth_.at<float>(y,x) = static_cast<float>(pt.z);
+//                }
+//            }
+//        }
 
-    }
+//    }
 
 
     void without_pg_callback( const sensor_msgs::ImageConstPtr & xtion_rgb_msg,
@@ -271,18 +271,18 @@ private:
         msg.binning_x = model.binningX();
         msg.binning_y = model.binningY();
         msg.D = model.distortionCoeffs();
-        msg.P[0] = model.projectionMatrix().at<double>(0,0);
-        msg.P[1] = model.projectionMatrix().at<double>(0,1);
-        msg.P[2] = model.projectionMatrix().at<double>(0,2);
-        msg.P[3] = model.projectionMatrix().at<double>(0,3);
-        msg.P[4] = model.projectionMatrix().at<double>(1,0);
-        msg.P[5] = model.projectionMatrix().at<double>(1,1);
-        msg.P[6] = model.projectionMatrix().at<double>(1,2);
-        msg.P[7] = model.projectionMatrix().at<double>(1,3);
-        msg.P[8] = model.projectionMatrix().at<double>(2,0);
-        msg.P[9] = model.projectionMatrix().at<double>(2,1);
-        msg.P[10] = model.projectionMatrix().at<double>(2,2);
-        msg.P[11] = model.projectionMatrix().at<double>(2,3);
+        msg.P[0] = cv::Mat(model.projectionMatrix()).at<double>(0,0);
+        msg.P[1] = cv::Mat(model.projectionMatrix()).at<double>(0,1);
+        msg.P[2] = cv::Mat(model.projectionMatrix()).at<double>(0,2);
+        msg.P[3] = cv::Mat(model.projectionMatrix()).at<double>(0,3);
+        msg.P[4] = cv::Mat(model.projectionMatrix()).at<double>(1,0);
+        msg.P[5] = cv::Mat(model.projectionMatrix()).at<double>(1,1);
+        msg.P[6] = cv::Mat(model.projectionMatrix()).at<double>(1,2);
+        msg.P[7] = cv::Mat(model.projectionMatrix()).at<double>(1,3);
+        msg.P[8] = cv::Mat(model.projectionMatrix()).at<double>(2,0);
+        msg.P[9] = cv::Mat(model.projectionMatrix()).at<double>(2,1);
+        msg.P[10] = cv::Mat(model.projectionMatrix()).at<double>(2,2);
+        msg.P[11] = cv::Mat(model.projectionMatrix()).at<double>(2,3);
     }
 
 public:

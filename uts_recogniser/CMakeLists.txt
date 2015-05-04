@@ -55,7 +55,9 @@ find_package(catkin REQUIRED COMPONENTS
   apc_msgs
 )
 
-find_package(Boost REQUIRED COMPONENTS thread system filesystem program_options signals )
+find_package(Boost REQUIRED COMPONENTS thread system filesystem)
+
+include_directories(include)
 
 endif()
 
@@ -204,9 +206,9 @@ set( HELPFUN_CPP
 set( HELPFUN_LIB helpfun )
 add_library( ${HELPFUN_LIB} STATIC ${HELPFUN_H} ${HELPFUN_CPP} )
 target_link_libraries( ${HELPFUN_LIB} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${EBLEARN_LIBRARIES}
-  ${CMAKE_SOURCE_DIR}/dependencies/libANN.a
-  ${CMAKE_SOURCE_DIR}/dependencies/liblevmar.a
-  ${CMAKE_SOURCE_DIR}/dependencies/libsiftfast.a )
+  ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/libANN.a
+  ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/liblevmar.a
+  ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/libsiftfast.a )
 
 if (USE_CATKIN)
 
@@ -217,6 +219,7 @@ add_executable(uts_init ${PROJECT_SOURCE_DIR}/src/uts_init.cpp )
 target_link_libraries(uts_init ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES} ${catkin_LIBRARIES})
 
 add_executable( pseudo_request src/pseudo_request.cpp )
+target_link_libraries(pseudo_request ${catkin_LIBRARIES})
 
 add_executable( json_generator src/json_generator.cpp )
 
