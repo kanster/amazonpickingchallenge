@@ -1,10 +1,11 @@
-#ifndef UTS_RECOGNISER_H
-#define UTS_RECOGNISER_H
+#ifndef OFFLINE_RECOGNISER_H
+#define OFFLINE_RECOGNISER_H
 
 #include "include/helpfun/json_parser.hpp"
 #include "include/helpfun/rgbd_recogniser.h"
 #include "include/helpfun/rgb_recogniser.h"
 #include "include/helpfun/kd_recogniser.h"
+#include "include/helpfun/eblearn_recogniser.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -34,6 +35,9 @@
 
 #include "apc_msgs/TargetRequest.h"
 
+// srv for ZJU block mode
+#include "apc_msgs/RecogniseALG.h"
+
 #include "apc_msgs/DataPublish.h"
 #include "apc_msgs/RecogStatus.h"
 
@@ -55,13 +59,14 @@
 
 using namespace std;
 
-#define WINDOW_NAME "objwindow"
 
-class UTSRecogniser{
+
+
+class OfflineRecogniser{
 
 private:
     // recognition method
-    typedef enum{RGBD_RECOG, RGB_RECOG, KD_RECOG} RecogMethod;
+    typedef enum{RGBD_RECOG, RGB_RECOG} RecogMethod;
 
     // sync policy of xtion and camera
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::PointCloud2> sensor_sync_policy;
@@ -92,9 +97,8 @@ private:
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     // constructor and destructor
-    UTSRecogniser( ros::NodeHandle & nh, string json_file, string method_file, string kd_dir, string mask_dir, bool use_cloud = false );
-
-    ~UTSRecogniser();
+    OfflineRecogniser( ros::NodeHandle & nh );
+    ~OfflineRecogniser();
 
     // main processing function
     void start_monitor( void );
@@ -120,9 +124,14 @@ public:
     bool target_srv_callback( apc_msgs::TargetRequest::Request & req,
                               apc_msgs::TargetRequest::Response & resp);
 
+    // block service callback
+    bool target_srv_callback_block( apc_msgs::RecogniseALG::Request & req,
+                                    apc_msgs::RecogniseALG::Response & resp);
+
+    vector<pair<string, vector<cv::Point> > > kd_eb_opt( vector<pair<string, vector<cv::Point> > > kd_results,
+                                                         vector<pair<string, vector<cv::Point> > > eb_results);
 
 private:
-    // function
     // recogniser main function of processing
     void process();
 
@@ -130,22 +139,22 @@ private:
     void load_method_config( string filename );
 
 private:
-    // variables
+    //! sync policy, with and without cloud
     boost::shared_ptr<message_filters::Synchronizer<sensor_sync_policy> > m_sensor_sync_;
     boost::shared_ptr<message_filters::Synchronizer<no_cloud_sensor_sync_policy> > m_no_cloud_sensor_sync_;
 
-    // camera info
+    //! camera info for 3 images
     image_geometry::PinholeCameraModel xtion_rgb_model_;
     image_geometry::PinholeCameraModel xtion_depth_model_;
     image_geometry::PinholeCameraModel camera_rgb_model_;
 
-    // publisher and subscriber
-    boost::shared_ptr<image_transport::ImageTransport> it_;
-    image_transport::Publisher      image_pub_;         // recognition result, areas
+    //! recognition result publish
+    ros::Publisher recog_pub_;
 
-    ros::Publisher recog_pub_;                  // recognition result publisher
-    ros::ServiceClient recog_client_;           // recognition result notification
+    //! call robotic platform to subscribe results
+    ros::ServiceClient recog_client_;
 
+    //! topics for sensor information
     string xtion_rgb_topic_;
     string xtion_rgb_info_topic_;
     string xtion_depth_topic_;
@@ -154,6 +163,7 @@ private:
     string camera_rgb_topic_;
     string camera_rgb_info_topic_;
 
+    //! sensor info subscriber
     message_filters::Subscriber<sensor_msgs::Image>         xtion_rgb_sub_;
     message_filters::Subscriber<sensor_msgs::CameraInfo>    xtion_rgb_info_sub_;
     message_filters::Subscriber<sensor_msgs::Image>         xtion_depth_sub_;
@@ -162,66 +172,93 @@ private:
     message_filters::Subscriber<sensor_msgs::Image>         camera_rgb_sub_;
     message_filters::Subscriber<sensor_msgs::CameraInfo>    camera_rgb_info_sub_;
 
-    // buffer data and mutex
+    //! buffer data, pointer and mutex
     SensorData sensor_data_;
-
     SensorData  *sensor_data_ptr_;
-
     bool        sensor_empty_;
     boost::mutex sensor_mutex_;
     boost::condition_variable sensor_cond_;
 
-    // unique lock
+    //! mutex for service call from robotic
     bool        target_received_;
     bool        image_captured_;
     boost::mutex      srvc_mutex_;
     int         target_count_;  // id for the request
 
+    /** recognition finish flag and mutex
+      * recogniser_done, finish or not
+      * recogniser_mutex, shared only with block-mode service callback
+      * recogniser_cond, shared only with block-mode service callback
+      */
     bool recogniser_done_;      // recogniser is finished
-    bool recogniser_success_;   // recogniser is success
+    boost::mutex recogniser_mutex_;
+    boost::condition_variable recogniser_cond_;
 
-
-    // configuration file
-    // json configuration input
+    //! json configuration file path
     string json_filename_;
-//    map< string, vector<string> > bin_contents_;
-//    vector< pair<string, string> > work_order_;
-    bool use_cloud_;
-    string mask_dir_;
-    string method_path_;
 
-    // target request
+    //! topic and srv names
+    string object_topic_name_;
+    string object_srv_name_;
+    string target_srv_name_;
+
+    //! depth image or point cloud
+    bool use_cloud_;
+    //! mask image directory
+    string mask_dir_;
+    //! file path for method, rgb or rgbd
+    string method_path_;
+    map<string, RecogMethod> methods_; // 1 -> object name, 2 -> method
+
+    //! target request
     string srv_bin_id_;
     string srv_object_name_;
     vector<string> srv_bin_contents_;
     int srv_object_index_;
     vector<int> srv_rm_object_indices_;
 
+    //! eblearn recog and directory
+    string eb_dir_;
+    string temp_conf_path_;
+    EBRecogniser ebr_;
+
+    //! xml model dir for rgb and rgbd
+    string xml_dir_;
+
+    //! eblearn recog and directory
     string kd_dir_;
     KDRecogniser kdr_;
 
 
-    // target item index
-    int data_index_;
-    string data_dir_;
-
-    // methods configuration file
-    map<string, RecogMethod> methods_; // 1 -> object name, 2 -> method
-
-    // object name and methods
-    vector<Item> items_;
-
-    // Recognition method
-    string reco_method_;
-
+    //! main process thread
     boost::thread process_thread_;
 
+    //! exit flag
     volatile bool exit_flag_;
 
+    //! debug mode
     bool debug_;
-    // node handler
+
+    //! node handler
     ros::NodeHandle * nh_;
+
+
+    /** operation mode and service mode */
+    /** op_mode_ = 1, kernel descriptor only
+      * op_mode_ = 2, eblearn descriptor only
+      * op_mode_ = 3, kernel descriptor + eblearn
+      * op_mode_ = 4, kernel descriptor + eblearn + optional rgb/rgbd
+      */
+    int op_mode_;
+
+    /** srv_mode_ = 1, non-block mode
+      * srv_mode_ = 2, block mode
+      */
+    int srv_mode_;
+
+    /** published topics */
+    apc_msgs::BinObjects bin_objs_;
 };
 
 
-#endif // UTS_RECOGNISER_H
+#endif // OFFLINE_RECOGNISER_H

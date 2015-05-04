@@ -1,31 +1,45 @@
 <launch>
   <node name="pseudo_request" cwd="node" pkg="uts_recogniser" type="pseudo_request" output="screen">
 
-		<!-- json file name -->
-		<param name="json" type="str" value="../data/201504171107.json"/>
+    <!-- json file name -->
+    <param name="json" type="str" value="../data/201505041207.json"/>
 
-		<!-- sensor data directory -->
-		<param name="data_dir" type="str" value="../data/201504174639/"/>
+    <!-- sensor data directory -->
+    <param name="data_dir" type="str" value="../data/201505010645/"/>
 
-		<!-- xml dataset directory -->
-		<param name="n_frames" type="int" value="12"/>
+    <!-- use point cloud or depth image -->
+    <param name="use_cloud" type="bool" value="false"/>
 
-		<!-- use point cloud or depth image -->
-		<param name="use_cloud" type="bool" value="false"/>
+    <!-- service mode -->
+    <!-- srv_mode_ = 1, non-blocking mode -->
+    <!-- srv_mode_ = 2, blocking mode -->
+    <param name="srv_mode" type="int" value="2"/>
 
-		<!-- service mode -->
-		<!-- srv_mode_ = 1, non-blocking mode -->
-		<!-- srv_mode_ = 2, blocking mode -->
-		<param name="srv_mode" type="int" value="2"/>
+    <!-- republish topic names -->
+    <param name="xtion_rgb_image" type="string" value="/camera/lowres_rgb/image"/>
+    <param name="xtion_depth_image" type="string" value="/camera/depth/image"/>
+    <param name="xtion_rgb_info" type="string" value="/camera/lowres_rgb/camera_info"/>
+    <param name="xtion_depth_info" type="string" value="/camera/depth/camera_info"/>
+    <param name="pg_rgb_image" type="string" value="/camera/highres_rgb/image"/>
+    <param name="pg_rgb_info" type="string" value="/camera/highres_rgb/camera_info"/>
+    <param name="xtion_points" type="string" value="/camera/points"/>
 
-		<!-- topic names -->
-		<param name="xtion_rgb_image" type="string" value="/camera/lowres_rgb/image"/>
-		<param name="xtion_depth_image" type="string" value="/camera/depth/image"/>
-		<param name="xtion_rgb_info" type="string" value="/camera/lowres_rgb/camera_info"/>
-		<param name="xtion_depth_info" type="string" value="/camera/depth/camera_info"/>
-		<param name="pg_rgb_image" type="string" value="/camera/highres_rgb/image"/>
-		<param name="pg_rgb_info" type="string" value="/camera/highres_rgb/camera_info"/>
-		<param name="xtion_points" type="string" value="/camera/points"/>
+    <!-- original topic names -->
+    <param name="ori_xtion_rgb_image" type="string" value="/camera/rgb/image_color"/>
+    <param name="ori_xtion_depth_image" type="string" value="/camera/depth/image_raw"/>
+    <param name="ori_xtion_rgb_info" type="string" value="/camera/rgb/camera_info"/>
+    <param name="ori_xtion_depth_info" type="string" value="/camera/depth/camera_info"/>
+    <param name="ori_pg_rgb_image" type="string" value="/rgb_image"/>
+    <param name="ori_pg_rgb_info" type="string" value="/camera_info"/>
 
-	</node>
+    <!-- online or offline sensor data -->
+    <!-- true: data from xtion (and pg) -->
+    <!-- false:data from disk -->
+    <param name="online" type="bool" value="true"/>
+
+    <!-- with or without pg -->
+    <!-- true: with pointgrey highres camera -->
+    <!-- false:without pointgrey highres camera -->
+    <param name="use_pg" type="bool" value="false"/>
+  </node>
 </launch>

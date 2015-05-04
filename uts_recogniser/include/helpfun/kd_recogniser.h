@@ -72,9 +72,6 @@ private:
     int step_size_;
     int bbox_size_;
 
-    // output results
-    vector< pair<string, vector<cv::Point> > >  recog_objects_;
-
     KernelDescManager * kdes_;
 
     void find_blobs( const cv::Mat & binary, vector< vector<cv::Point2i> > & blobs );
@@ -100,9 +97,7 @@ public:
 
     void init_libkdes( string svm_model_name, string kdes_model_name, string model_folder, string model, unsigned int model_type );
 
-    vector<pair<string, vector<cv::Point> > > process( bool use_rgb = true );
-
-    void clear();
+    void process( vector<pair<string, vector<cv::Point> > > & results, bool use_rgb = true );
 };
 
 

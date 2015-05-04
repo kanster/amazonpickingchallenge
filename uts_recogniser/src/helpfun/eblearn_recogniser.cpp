@@ -142,7 +142,85 @@ void EBRecogniser::set_frame() {
     }
 }
 
-EBRecogniser::EBRecogniser(){}
+
+EBRecogniser::EBRecogniser(){
+}
+
+
+void EBRecogniser::init(string tmp_conf_path, string mat_dir) {
+    // generate ebparam map
+    const std::string item_names_arr[] = { "oreo_mega_stuf", "crayola_64_ct", "cheezit_big_original", "first_years_take_and_toss_straw_cup", "dr_browns_bottle_brush",
+                                           "champion_copper_plus_spark_plug", "mommys_helper_outlet_plugs", "paper_mate_12_count_mirado_black_warrior", "highland_6539_self_stick_notes", "kong_duck_dog_toy",
+                                           "expo_dry_erase_board_eraser", "sharpie_accent_tank_style_highlighters", "feline_greenies_dental_treats", "mark_twain_huckleberry_finn", "laugh_out_loud_joke_book",
+                                           "genuine_joe_plastic_stir_sticks", "stanley_66_052", "elmers_washable_no_run_school_glue", "kyjen_squeakin_eggs_plush_puppies",
+                                           "munchkin_white_hot_duck_bath_toy", "safety_works_safety_glasses", "mead_index_cards", "kong_sitting_frog_dog_toy", "rolodex_jumbo_pencil_cup", "kong_air_dog_squeakair_tennis_ball"};
+    std::vector<std::string> item_names( item_names_arr, item_names_arr+sizeof(item_names_arr)/sizeof(item_names_arr[0]) );
+
+    // generate ebparam for each item
+    std::vector<EBParam> item_params;
+    EBParam def_param;
+    item_params.push_back( def_param ); // oreo_mega_stuf
+    item_params.push_back( def_param ); // crayola_64_ct
+    item_params.push_back( def_param ); // cheezit_big_original
+
+    EBParam first_years_take_and_toss_straw_cup_param( 0.35, 1, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( first_years_take_and_toss_straw_cup_param );  // first_years_take_and_toss_straw_cup
+
+    EBParam dr_browns_bottle_brush_param(0.4, 1.4, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( dr_browns_bottle_brush_param );               // dr_browns_bottle_brush
+
+    item_params.push_back( def_param ); // champion_copper_plus_spark_plug
+
+    EBParam mommys_helper_outlet_plugs_param( 0.4, 1.2, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( mommys_helper_outlet_plugs_param ); // mommys_helper_outlet_plugs
+
+    item_params.push_back( def_param ); // paper_mate_12_count_mirado_black_warrior
+    item_params.push_back( def_param ); // highland_6539_self_stick_notes
+
+    EBParam kong_duck_dog_toy_param( 0.4, 1.5, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( kong_duck_dog_toy_param ); // kong_duck_dog_toy
+
+    item_params.push_back( def_param ); // expo_dry_erase_board_eraser
+
+    EBParam sharpie_accent_tank_style_highlighters_param( 0.5, 1.5, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( sharpie_accent_tank_style_highlighters_param ); // sharpie_accent_tank_style_highlighters
+
+    item_params.push_back( def_param ); // feline_greenies_dental_treats
+    item_params.push_back( def_param ); // mark_twain_huckleberry_finn
+    item_params.push_back( def_param ); // laugh_out_loud_joke_book
+    item_params.push_back( def_param ); // genuine_joe_plastic_stir_sticks
+
+    EBParam stanley_66_052_param( 0.45, 1.5, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( stanley_66_052_param ); // stanley_66_052
+
+    item_params.push_back( def_param ); // elmers_washable_no_run_school_glue
+
+    EBParam kyjen_squeakin_eggs_plush_puppies_param( 0.4, 1.2, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( kyjen_squeakin_eggs_plush_puppies_param ); // kyjen_squeakin_eggs_plush_puppies
+
+    EBParam munchkin_white_hot_duck_bath_toy_param( 0.5, 1.5, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( munchkin_white_hot_duck_bath_toy_param ); // munchkin_white_hot_duck_bath_toy
+
+    EBParam safety_works_safety_glasses_param( 0.4, 1.2, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( safety_works_safety_glasses_param ); // safety_works_safety_glasses
+
+    item_params.push_back( def_param ); // mead_index_cards
+
+    EBParam kong_sitting_frog_dog_toy_param( 0.5, 1.5, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( kong_sitting_frog_dog_toy_param ); // kong_sitting_frog_dog_toy
+
+    item_params.push_back( def_param ); // rolodex_jumbo_pencil_cup
+
+    EBParam kong_air_dog_squeakair_tennis_ball_param( 0.4, 1.5, 64, 64, "9x9", "9x9", "10x10" );
+    item_params.push_back( kong_air_dog_squeakair_tennis_ball_param ); // kong_air_dog_squeakair_tennis_ball
+
+    for ( int i = 0; i < (int)item_names.size(); ++ i )
+        item_params_map_.insert( make_pair( item_names[i], item_params[i] ) );
+
+    // load template conf
+    load_temp_conf( tmp_conf_path );
+    set_mat_dir( mat_dir );
+}
 
 
 void EBRecogniser::load_sensor_data(cv::Mat rgb_image, cv::Mat depth_image) {
@@ -171,10 +249,20 @@ void EBRecogniser::load_info(cv::Mat empty_image, cv::Mat mask_image) {
 }
 
 
+void EBRecogniser::load_temp_conf(string conf_path) {
+    conf_ = ebl::configuration( conf_path, true, true, false );
+}
+
 void EBRecogniser::set_env_configuration(std::string target_item, std::vector<std::string> items) {
     target_item_ = target_item;
-    for ( int i = 0; i < (int)items.size(); ++ i )
+    for ( int i = 0; i < (int)items.size(); ++ i ) {
         items_.push_back( items[i] );
+    }
+}
+
+
+void EBRecogniser::set_mat_dir(string mat_dir) {
+    mat_dir_ = mat_dir;
 }
 
 
@@ -183,41 +271,64 @@ void EBRecogniser::set_conf_dir(std::string conf_dir) {
 }
 
 
-std::vector< std::pair<std::string, std::vector<cv::Point> > > EBRecogniser::process( bool use_rgb ) {
-    std::vector< std::pair<std::string, std::vector<cv::Point> > > recog_results;
-
+void EBRecogniser::process( std::vector< std::pair<std::string, std::vector<cv::Point> > > & results, bool use_rgb ) {
+    results.clear();
     std::vector< std::pair<std::string, int> > objects_n = duplicated_bin_contents( items_ );
-
     // init detector for each item
     for ( int i = 0; i < (int)objects_n.size(); ++ i ) {
         std::string item_name = objects_n[i].first;
-        std::string conf_path = conf_dir_+item_name+".conf";
-        ebl::configuration conf( conf_path, true, true, false );
+        //! setup conf detail
+        //! set training data
+        conf_.set_string( "root", mat_dir_.c_str() );
+        conf_.set_string( "train_dsname", std::string(item_name+"+bg_train"));
+        conf_.set_string( "val_dsname", std::string(item_name+"+bg_val"));
+        conf_.set_string( "train", std::string(mat_dir_+"/"+item_name+"+bg_train_data.mat") );
+        conf_.set_string( "train_labels", std::string(mat_dir_+"/"+item_name+"+bg_train_labels.mat") );
+        conf_.set_string( "train_classes", std::string(mat_dir_+"/"+item_name+"+bg_train_classes.mat") );
+        conf_.set_string( "val", std::string(mat_dir_+"/"+item_name+"+bg_val_data.mat") );
+        conf_.set_string( "val_labels", std::string(mat_dir_+"/"+item_name+"+bg_val_labels.mat") );
+        conf_.set_string( "val_classes", std::string(mat_dir_+"/"+item_name+"+bg_val_classes.mat") );
+        conf_.set_string( "conv2_table", std::string(mat_dir_+"/table_6_16_connect_60.mat") );
+        conf_.set_string( "table1", std::string(mat_dir_+"/table_6_16_connect_60.mat") );
+        conf_.set_string( "weights", std::string(mat_dir_+"/"+item_name+".mat") );
+        conf_.set_string( "classes", std::string(mat_dir_+"/"+item_name+"+bg_val_classes.mat") );
+        EBParam ebp = item_params_map_[item_name];
+        conf_.set_double( "max_scale", ebp.max_scale );
+        conf_.set_double( "min_scale", ebp.min_scale );
+        conf_.set_int( "inputh", ebp.inputh );
+        conf_.set_int( "inputw", ebp.inputw );
+        conf_.set_string( "conv0_kernel", ebp.conv0_kernel );
+        conf_.set_string( "conv2_kernel", ebp.conv2_kernel );
+        conf_.set_string( "conv4_kernel", ebp.conv4_kernel );
+        conf_.write( (std::string(item_name+".conf")).c_str() );
+//        std::string conf_path = conf_dir_+item_name+".conf";
+//        ebl::configuration conf( conf_path, true, true, false );
+
         ebl::parameter<float> theparam;
         theparam.set_forward_only();
         ebl::idx<ebl::ubyte> classes(1,1);
-        ebl::load_matrix<ebl::ubyte>( classes, conf.get_cstring( "classes" ) );
+        ebl::load_matrix<ebl::ubyte>( classes, conf_.get_cstring( "classes" ) );
         std::vector<std::string> sclasses = ebl::ubyteidx_to_stringvector(classes);
-        ebl::answer_module<float> *ans = ebl::create_answer<float, float, float>(conf, classes.dim(0));
+        ebl::answer_module<float> *ans = ebl::create_answer<float, float, float>(conf_, classes.dim(0));
         uint noutputs = ans->get_nfeatures();
         ebl::intg thick = -1;
-        ebl::module_1_1<float> * net = ebl::create_network<float>(theparam, conf, thick, noutputs, "arch", 0);
+        ebl::module_1_1<float> * net = ebl::create_network<float>(theparam, conf_, thick, noutputs, "arch", 0);
 
         // loading weights
-        if ( conf.exists("weights") ) {
-            std::vector<std::string> w = ebl::string_to_stringvector(conf.get_string("weights"));
+        if ( conf_.exists("weights") ) {
+            std::vector<std::string> w = ebl::string_to_stringvector(conf_.get_string("weights"));
             theparam.load_x(w);
-            if ( conf.exists("weights_permutation") ) {
-                std::string sblocks = conf.get_string("weights_blocks");
-                std::string spermut = conf.get_string("weights_permutation");
+            if ( conf_.exists("weights_permutation") ) {
+                std::string sblocks = conf_.get_string("weights_blocks");
+                std::string spermut = conf_.get_string("weights_permutation");
                 std::vector<ebl::intg> blocks = ebl::string_to_intgvector(sblocks.c_str());
                 std::vector<uint> permut = ebl::string_to_uintvector(spermut.c_str());
                 theparam.permute_x(blocks, permut);
             }
         }
         else {
-            if (conf.exists_true("manual_load")) {
-                ebl::manually_load_network(*((ebl::layers<float>*)net), conf);
+            if (conf_.exists_true("manual_load")) {
+                ebl::manually_load_network(*((ebl::layers<float>*)net), conf_);
             }
             else { // random weights
                 int seed = ebl::dynamic_init_drand();
@@ -229,7 +340,7 @@ std::vector< std::pair<std::string, std::vector<cv::Point> > > EBRecogniser::pro
         pdetect_ = new ebl::detector<float>(*net, sclasses, ans);
         std::string outdir = "./";
         bool silent = false;
-        init_detector( *pdetect_, conf, outdir, silent );
+        init_detector( *pdetect_, conf_, outdir, silent );
 
         ebl::bboxes & bbs = pdetect_->fprop(frame_);
         int ret_nbb = bbs.size() > objects_n[i].second? objects_n[i].second: bbs.size(); // return n of bbs
@@ -240,13 +351,12 @@ std::vector< std::pair<std::string, std::vector<cv::Point> > > EBRecogniser::pro
             pts.push_back( cv::Point(bb.w0+bb.width, bb.h0) );
             pts.push_back( cv::Point(bb.w0+bb.width, bb.h0+bb.height) );
             pts.push_back( cv::Point(bb.w0, bb.h0+bb.height) );
-            recog_results.push_back( std::make_pair( item_name, pts ) );
+            results.push_back( std::make_pair( item_name, pts ) );
         }
         if (ans) delete ans;
         if (net) delete net;
     }
 
-    return recog_results;
 }
 
 

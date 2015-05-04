@@ -181,32 +181,28 @@ target_link_libraries( ${HELPFUN_LIB} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${EBLEARN_
 
 rosbuild_add_boost_directories()
 
-rosbuild_add_executable(${PROJECT_NAME}
-                        ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp
-                        ${PROJECT_SOURCE_DIR}/include/uts_recogniser.h)
-
+rosbuild_add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp ${PROJECT_SOURCE_DIR}/include/uts_recogniser.h)
 rosbuild_link_boost(${PROJECT_NAME} thread system filesystem program_options signals )
 target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES})# ${LAPACK_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${HELPFUN_LIB} ${KDES_LIB} )
 
-rosbuild_add_executable(offline_recogniser
-                        ${PROJECT_SOURCE_DIR}/src/offline_recogniser.cpp
-                        ${PROJECT_SOURCE_DIR}/include/offline_recogniser.h)
+rosbuild_add_executable(uts_init ${PROJECT_SOURCE_DIR}/src/uts_init.cpp )
+rosbuild_link_boost(uts_init thread system filesystem program_options signals )
+target_link_libraries(uts_init ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES})
 
-rosbuild_link_boost(offline_recogniser thread system filesystem program_options signals )
-target_link_libraries(offline_recogniser ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES})# ${LAPACK_LIBRARIES})
-target_link_libraries(offline_recogniser ${HELPFUN_LIB} ${KDES_LIB} )
-
-rosbuild_add_executable(kd_test ${PROJECT_SOURCE_DIR}/src/kd_test.cpp)
-rosbuild_link_boost(kd_test thread system filesystem program_options signals )
-target_link_libraries(kd_test ${OpenCV_LIBS} ${BLAS_LIBRARIES})# ${LAPACK_LIBRARIES})
-target_link_libraries(kd_test ${HELPFUN_LIB} ${KDES_LIB} )
 
 rosbuild_add_executable( pseudo_request src/pseudo_request.cpp )
 
+rosbuild_add_executable( json_generator src/json_generator.cpp )
 
-rosbuild_add_executable(eblearn_test ${PROJECT_SOURCE_DIR}/src/eblearn_test.cpp)
-target_link_libraries(eblearn_test ${OpenCV_LIBS} ${EBLEARN_LIBRARIES} ${HELPFUN_LIB})
-rosbuild_link_boost(eblearn_test thread system filesystem program_options signals regex )
+
+#rosbuild_add_executable(kd_test ${PROJECT_SOURCE_DIR}/src/kd_test.cpp)
+#rosbuild_link_boost(kd_test thread system filesystem program_options signals )
+#target_link_libraries(kd_test ${OpenCV_LIBS} ${BLAS_LIBRARIES})# ${LAPACK_LIBRARIES})
+#target_link_libraries(kd_test ${HELPFUN_LIB} ${KDES_LIB} )
+
+#rosbuild_add_executable(eblearn_test ${PROJECT_SOURCE_DIR}/src/eblearn_test.cpp)
+#target_link_libraries(eblearn_test ${OpenCV_LIBS} ${EBLEARN_LIBRARIES} ${HELPFUN_LIB})
+#rosbuild_link_boost(eblearn_test thread system filesystem program_options signals regex )
 
 

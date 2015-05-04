@@ -4,5 +4,6 @@ string[] BinContents
 int8 ObjectIndex
 int8[] RemovedObjectIndices
 bool use_cloud
+bool use_pg
 ---
 bool Found

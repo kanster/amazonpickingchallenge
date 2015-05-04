@@ -9,10 +9,11 @@ sensor_msgs/Image xtion_rgb_image
 sensor_msgs/CameraInfo xtion_rgb_info
 sensor_msgs/Image xtion_depth_image
 sensor_msgs/CameraInfo xtion_depth_info
-sensor_msgs/Image pg_rgb_image
-sensor_msgs/CameraInfo pg_rgb_info
 bool use_cloud
 sensor_msgs/PointCloud2 cloud
+bool use_pg
+sensor_msgs/Image pg_rgb_image
+sensor_msgs/CameraInfo pg_rgb_info
 ---
 # object poses
 bool found

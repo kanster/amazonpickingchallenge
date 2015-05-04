@@ -54,6 +54,7 @@ public:
     map<string, vector<string> > bin_contents_;
     vector< pair<string, string> > work_order_;
 
+
     /** default constructor */
     JSON() {}
 

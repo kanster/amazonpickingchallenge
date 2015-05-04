@@ -218,7 +218,8 @@ void KDRecogniser::init_libkdes(string svm_model_name, string kdes_model_name, s
 
 
 // process
-vector<pair<string, vector<cv::Point> > > KDRecogniser::process( bool use_rgb ) {
+void KDRecogniser::process(vector<pair<string, vector<cv::Point> > > & results, bool use_rgb) {
+    results.clear();
     // detailed mask image generation using subtraction
     // rgb image to gray scale image conversion
     int threshold = 20;
@@ -498,19 +499,8 @@ vector<pair<string, vector<cv::Point> > > KDRecogniser::process( bool use_rgb ) 
                                 contour.push_back( cv::Point(x, y) );
                 convex_pts = get_convex_hull( contour );
             }
-            recog_objects_.push_back( make_pair(object_name, convex_pts) );
+            results.push_back( make_pair(object_name, convex_pts) );
         }
     }
-
-
-
-
-
-    return recog_objects_;
-}
-
-
-void KDRecogniser::clear() {
-    recog_objects_.clear();
 }
 
