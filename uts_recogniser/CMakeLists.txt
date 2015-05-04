@@ -1,4 +1,15 @@
 cmake_minimum_required(VERSION 2.4.6)
+project( uts_recogniser )
+
+if(DEFINED CATKIN_DEVEL_PREFIX)
+  set(USE_CATKIN true)
+else()
+  set(USE_CATKIN false)
+endif()
+
+################################### ros_build ####################################
+if(NOT USE_CATKIN)
+
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -fpermissive -O3")
@@ -19,17 +30,37 @@ rosbuild_init()
 #rosbuild_gensrv()
 #rosbuild_genmsg()
 
-project( uts_recogniser )
 
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/dependencies/")
-set( ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CMAKE_SOURCE_DIR}/dependencies/" )
+################################### catkin #########################################
+else()
 
+find_package(catkin REQUIRED COMPONENTS
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+  actionlib_msgs
+  roscpp
+  rospy
+  message_filters
+  image_geometry
+  pcl_ros
+  pcl_conversions
+  image_transport
+  cv_bridge
+  apc_msgs
+)
 
+find_package(Boost REQUIRED COMPONENTS thread system filesystem program_options signals )
+
+endif()
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/")
+set( ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CMAKE_CURRENT_SOURCE_DIR}/dependencies/" )
 
 find_package(PkgConfig REQUIRED)
 
@@ -177,7 +208,19 @@ target_link_libraries( ${HELPFUN_LIB} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${EBLEARN_
   ${CMAKE_SOURCE_DIR}/dependencies/liblevmar.a
   ${CMAKE_SOURCE_DIR}/dependencies/libsiftfast.a )
 
+if (USE_CATKIN)
 
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp ${PROJECT_SOURCE_DIR}/include/uts_recogniser.h)
+target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES} ${HELPFUN_LIB} ${KDES_LIB} ${catkin_LIBRARIES})
+
+add_executable(uts_init ${PROJECT_SOURCE_DIR}/src/uts_init.cpp )
+target_link_libraries(uts_init ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES} ${catkin_LIBRARIES})
+
+add_executable( pseudo_request src/pseudo_request.cpp )
+
+add_executable( json_generator src/json_generator.cpp )
+
+else()
 
 rosbuild_add_boost_directories()
 
@@ -195,6 +238,7 @@ rosbuild_add_executable( pseudo_request src/pseudo_request.cpp )
 
 rosbuild_add_executable( json_generator src/json_generator.cpp )
 
+endif()
 
 #rosbuild_add_executable(kd_test ${PROJECT_SOURCE_DIR}/src/kd_test.cpp)
 #rosbuild_link_boost(kd_test thread system filesystem program_options signals )
