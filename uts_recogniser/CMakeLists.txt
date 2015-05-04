@@ -59,6 +59,8 @@ find_package(Boost REQUIRED COMPONENTS thread system filesystem)
 
 include_directories(include)
 
+catkin_package()
+
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/")
@@ -214,12 +216,15 @@ if (USE_CATKIN)
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp ${PROJECT_SOURCE_DIR}/include/uts_recogniser.h)
 target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES} ${HELPFUN_LIB} ${KDES_LIB} ${catkin_LIBRARIES})
+add_dependencies(${PROJECT_NAME} apc_msgs_generate_messages_cpp)
 
 add_executable(uts_init ${PROJECT_SOURCE_DIR}/src/uts_init.cpp )
 target_link_libraries(uts_init ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES} ${catkin_LIBRARIES})
+add_dependencies(uts_init apc_msgs_generate_messages_cpp)
 
 add_executable( pseudo_request src/pseudo_request.cpp )
 target_link_libraries(pseudo_request ${catkin_LIBRARIES})
+add_dependencies(pseudo_request apc_msgs_generate_messages_cpp)
 
 add_executable( json_generator src/json_generator.cpp )
 
