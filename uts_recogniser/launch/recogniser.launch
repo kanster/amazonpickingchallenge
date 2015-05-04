@@ -2,23 +2,23 @@
   <node name="uts_recogniser" cwd="node" pkg="uts_recogniser" type="uts_recogniser" output="screen">
 
     <!-- json file name -->
-    <param name="json" type="str" value="../data/201505010645.json"/>
+    <param name="json" type="str" value="$(find uts_recogniser)/data/201504171107.json"/>
 
     <!-- method file name -->
-    <param name="method" type="str" value="../data/method.txt"/>
+    <param name="method" type="str" value="$(find uts_recogniser)/data/method.txt"/>
 
     <!-- kernel descriptor parameter directory -->
-    <param name="kd_dir" type="str" value="../data/kd_models/"/>
+    <param name="kd_dir" type="str" value="$(find uts_recogniser)/data/kd_models/"/>
 
     <!-- eblearn dataset directory -->
-    <param name="eb_dir" type="str" value="../data/eblearn/models/"/>
-    <param name="eb_temp_conf" type="str" value="../data/eblearn/template.conf"/>
+    <param name="eb_dir" type="str" value="$(find uts_recogniser)/data/eblearn/models/"/>
+    <param name="eb_temp_conf" type="str" value="$(find uts_recogniser)/data/eblearn/template.conf"/>
 
     <!-- xml dataset directory -->
-    <param name="xml_dir" type="str" value="../data/amazon_models/"/>
+    <param name="xml_dir" type="str" value="$(find uts_recogniser)/data/amazon_models/"/>
 
     <!-- mask image for each bin directory -->
-    <param name="mask_dir" type="str" value="../data/201505010645/"/>
+    <param name="mask_dir" type="str" value="$(find uts_recogniser)/data/201504174639/"/>
 
     <!-- use point cloud or depth image -->
     <param name="use_cloud" type="bool" value="false"/>
