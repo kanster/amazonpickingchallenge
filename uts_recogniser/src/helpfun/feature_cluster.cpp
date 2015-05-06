@@ -1,6 +1,6 @@
 #include "include/helpfun/feature_cluster.h"
 
-// canopy constructor
+//! canopy constructor
 template<typename T, int N> FeatureCluster::Canopy<T, N>::Canopy( Matrix<float, N, 1> & p, T & t, int id ) {
     center = p;
     bound_points.push_back( t );
@@ -8,7 +8,14 @@ template<typename T, int N> FeatureCluster::Canopy<T, N>::Canopy( Matrix<float, 
     canopyid = id;
 }
 
-// Feature cluster constructor
+//! Feature cluster constructor
+FeatureCluster::FeatureCluster(ClusterParam cp) {
+    radius_ = (float)cp.radius;
+    merge_ = (float)cp.merge;
+    min_pts_ = cp.minpts;
+    max_iterations_ = cp.maxiters;
+}
+
 FeatureCluster::FeatureCluster(float radius, float merge, int min_pts, int max_iterations) {
     radius_ = radius;
     merge_  = merge;

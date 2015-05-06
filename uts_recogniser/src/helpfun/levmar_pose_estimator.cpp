@@ -4,8 +4,12 @@
 
 Vector4f g_levmar_camera_param = Vector4f::Zero();
 
+//! constructor
+LevmarPoseEstimator::LevmarPoseEstimator(LevmarParam lmp) {
+    init_params( lmp.max_ransac, lmp.max_lm, lmp.max_objs_per_cluster, lmp.n_pts_align, lmp.min_pts_per_obj, (float)lmp.error_threshold, lmp.camera_param );
+}
 
-// init
+//! init
 void LevmarPoseEstimator::init_params(int max_ransac_tests, int max_lm_tests, int max_objects_per_cluster, int n_pts_align, int min_n_pts_object, float error_threshold, Vector4f levmar_camera_param) {
     max_ransac_tests_   = max_ransac_tests;
     max_lm_tests_       = max_lm_tests;
@@ -166,15 +170,15 @@ bool LevmarPoseEstimator::ratsac(Pose &pose, const vector<LmData *> &ori_cluster
         sort(errors.begin(), errors.end(),  boost::bind(&std::pair<int, float>::second, _1) < boost::bind(&std::pair<int, float>::second, _2));
 
         if ( (int)consistent.size() > cluster.size()*0.5 ) {
-            for ( int i = 0; i < (int)errors.size(); ++ i )
-                cout << errors[i].first << ", " << errors[i].second << "\n";
+//            for ( int i = 0; i < (int)errors.size(); ++ i )
+//                cout << errors[i].first << ", " << errors[i].second << "\n";
             vector<LmData *> pose_matches;
             int n_pose_matches = min_n_pts_object_ > consistent.size()? consistent.size(): min_n_pts_object_;
-            cout << "\n=========\n";
+//            cout << "\n=========\n";
             int idx = 0;
             while ( errors[idx].second < error_threshold_ ) {
                 pose_matches.push_back( cluster[errors[idx].first] );
-                cout << pose_matches.back()->score << ", " << pose_matches.back()->ratio << " with error: " << errors[idx].second << endl;
+//                cout << pose_matches.back()->score << ", " << pose_matches.back()->ratio << " with error: " << errors[idx].second << endl;
                 idx ++;
             }
             /*
@@ -183,7 +187,7 @@ bool LevmarPoseEstimator::ratsac(Pose &pose, const vector<LmData *> &ori_cluster
                 cout << pose_matches.back()->score << ", " << pose_matches.back()->ratio << " with error: " << errors[i].second << endl;
             }
             */
-            cout << "=========\n";
+//            cout << "=========\n";
 
             optimize_camera( pose, pose_matches, max_lm_tests_ );
             return true;
@@ -217,16 +221,16 @@ void LevmarPoseEstimator::process(const vector<MatchRGB> &matches, SP_Model mode
     for ( int i_cluster = 0; i_cluster < (int)clusters.size(); ++ i_cluster )
         for ( int i_obj = 0; i_obj < max_objects_per_cluster_; ++ i_obj )
             tasks.push_back( i_cluster );
-//    #pragma omp parallel for
+    #pragma omp parallel for
     for ( int task = 0; task < (int)tasks.size(); ++ task ) {
         vector<LmData *> cl;
         foreach( point, clusters[tasks[task]] )
             cl.push_back( &lm_data[point] );
         Pose pose;
-        bool found = ratsac( pose, cl );
-//        bool found = ransac( pose, cl );
+//        bool found = ratsac( pose, cl );
+        bool found = ransac( pose, cl );
         if ( found > 0 )
-//        #pragma omp critical(POSE)
+        #pragma omp critical(POSE)
         {
             SP_Object obj(new Object);
             obj->pose_ = pose;

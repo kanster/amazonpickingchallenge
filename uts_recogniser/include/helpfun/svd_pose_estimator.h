@@ -14,6 +14,8 @@ private:
 
 
 public:
+    SVDPoseEstimator( SVDParam param );
+
     SVDPoseEstimator( float error, int minpts );
 
     list<SP_Object> process( const vector<MatchRGBD> & matches, SP_Model model, const vector< list<int> > & clusters );

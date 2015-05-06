@@ -1,0 +1,105 @@
+{
+  "bin_contents":
+  {
+    "bin_A":
+    [
+      "first_years_take_and_toss_straw_cup","safety_works_safety_glasses"
+    ],
+    "bin_B":
+    [
+      "first_years_take_and_toss_straw_cup","munchkin_white_hot_duck_bath_toy"
+    ],
+    "bin_C":
+    [
+      "first_years_take_and_toss_straw_cup","kong_air_dog_squeakair_tennis_ball"
+    ],
+    "bin_D":
+    [
+      "first_years_take_and_toss_straw_cup","mommys_helper_outlet_plugs"
+    ],
+    "bin_E":
+    [
+      "first_years_take_and_toss_straw_cup","kong_sitting_frog_dog_toy"
+    ],
+    "bin_F":
+    [
+      "first_years_take_and_toss_straw_cup","sharpie_accent_tank_style_highlighters"
+    ],
+    "bin_G":
+    [
+      "first_years_take_and_toss_straw_cup","kong_duck_dog_toy"
+    ],
+    "bin_H":
+    [
+      "first_years_take_and_toss_straw_cup","kyjen_squeakin_eggs_plush_puppies"
+    ],
+    "bin_I":
+    [
+      "first_years_take_and_toss_straw_cup","dr_browns_bottle_brush"
+    ],
+    "bin_J":
+    [
+      "stanley_66_052","safety_works_safety_glasses"
+    ],
+    "bin_K":
+    [
+      "safety_works_safety_glasses","munchkin_white_hot_duck_bath_toy"
+    ],
+    "bin_L":
+    [
+      "safety_works_safety_glasses","kong_air_dog_squeakair_tennis_ball"
+    ]
+  },
+
+  "work_order":
+  [
+    {
+      "bin": "bin_A",
+      "item": "first_years_take_and_toss_straw_cup"
+    },
+    {
+      "bin": "bin_B",
+      "item": "munchkin_white_hot_duck_bath_toy"
+    },
+    {
+      "bin": "bin_C",
+      "item": "kong_air_dog_squeakair_tennis_ball"
+    },
+    {
+      "bin": "bin_D",
+      "item": "mommys_helper_outlet_plugs"
+    },
+    {
+      "bin": "bin_E",
+      "item": "kong_sitting_frog_dog_toy"
+    },
+    {
+      "bin": "bin_F",
+      "item": "first_years_take_and_toss_straw_cup"
+    },
+    {
+      "bin": "bin_G",
+      "item": "kong_duck_dog_toy"
+    },
+    {
+      "bin": "bin_H",
+      "item": "kyjen_squeakin_eggs_plush_puppies"
+    },
+    {
+      "bin": "bin_I",
+      "item": "dr_browns_bottle_brush"
+    },
+    {
+      "bin": "bin_J",
+      "item": "stanley_66_052"
+    },
+    {
+      "bin": "bin_K",
+      "item": "safety_works_safety_glasses"
+    },
+    {
+      "bin": "bin_L",
+      "item": "kong_air_dog_squeakair_tennis_ball"
+    }
+  ]
+}

@@ -55,8 +55,6 @@ private:
 
     int target_idx_;
 
-    Vector4f params_;
-
     vector<string> target_bin_content_;
     string target_object_;
     int target_in_bin_;
@@ -73,9 +71,9 @@ private:
 
     list<SP_Object> objects_;
 
-
 private:
-    void filter_objects();
+    void filter_objects(list<SP_Object> & objects);
+
 public:
     /** constructor */
     RGBRecogniser( cv::Mat rgb_image );
@@ -90,13 +88,16 @@ public:
     /** set target item and neighboured items */
     void set_env_configuration( string target_item, vector<string> items );
 
-    /** set camera parameters */
-    void set_camera_params( float fx, float fy, float cx, float cy );
+    //! set all items in the environment
+    void set_bin_contents( vector<string> items );
+
+    //! set target item
+    //! target item has to be in the items list
+    void set_target_item( string target );
 
 
-    bool run( int min_matches, int min_filtered_matches, bool visualise );
+    bool run( list<SP_Object> & objects, RGBParam param, int min_matches, int min_filtered_matches, bool visualise );
 
-    list<SP_Object> get_objects();
 
 };
 

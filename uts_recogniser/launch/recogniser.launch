@@ -2,23 +2,23 @@
   <node name="uts_recogniser" cwd="node" pkg="uts_recogniser" type="uts_recogniser" output="screen">
 
     <!-- json file name -->
-    <param name="json" type="str" value="$(find uts_recogniser)/data/201504171107.json"/>
+    <param name="json" type="str" value="../data/201505041207.json"/>
 
     <!-- method file name -->
-    <param name="method" type="str" value="$(find uts_recogniser)/data/method.txt"/>
+    <param name="method" type="str" value="../data/method.txt"/>
 
     <!-- kernel descriptor parameter directory -->
-    <param name="kd_dir" type="str" value="$(find uts_recogniser)/data/kd_models/"/>
+    <param name="kd_dir" type="str" value="../data/kd_models/"/>
 
     <!-- eblearn dataset directory -->
-    <param name="eb_dir" type="str" value="$(find uts_recogniser)/data/eblearn/models/"/>
-    <param name="eb_temp_conf" type="str" value="$(find uts_recogniser)/data/eblearn/template.conf"/>
+    <param name="eb_dir" type="str" value="../data/eblearn/models/"/>
+    <param name="eb_temp_conf" type="str" value="../data/eblearn/template.conf"/>
 
     <!-- xml dataset directory -->
-    <param name="xml_dir" type="str" value="$(find uts_recogniser)/data/amazon_models/"/>
+    <param name="xml_dir" type="str" value="../data/amazon_models/"/>
 
     <!-- mask image for each bin directory -->
-    <param name="mask_dir" type="str" value="$(find uts_recogniser)/data/201504174639/"/>
+    <param name="mask_dir" type="str" value="../data/201505060922/"/>
 
     <!-- use point cloud or depth image -->
     <param name="use_cloud" type="bool" value="false"/>
@@ -27,8 +27,9 @@
     <!-- op_mode_ = 1, kernel descriptor only -->
     <!-- op_mode_ = 2, eblearn descriptor only -->
     <!-- op_mode_ = 3, kernel descriptor + eblearn -->
-    <!-- op_mode_ = 4, kernel descriptor + eblearn + optional rgb/rgbd -->
-    <param name="op_mode" type="int" value="2"/>
+    <!-- op_mode_ = 4, kernel descriptor + rgb/rgbd -->
+    <!-- op_mode_ = 5, kernel descriptor + eblearn + optional rgb/rgbd -->
+    <param name="op_mode" type="int" value="4"/>
 
     <!-- service mode -->
     <!-- srv_mode_ = 1, non-blocking mode -->
@@ -36,13 +37,66 @@
     <param name="srv_mode" type="int" value="2"/>
 
     <!-- topic names -->
-    <param name="xtion_rgb_image" type="string" value="/camera/lowres_rgb/image"/>
-    <param name="xtion_depth_image" type="string" value="/camera/depth/image"/>
-    <param name="xtion_rgb_info" type="string" value="/camera/lowres_rgb/camera_info"/>
-    <param name="xtion_depth_info" type="string" value="/camera/depth/camera_info"/>
-    <param name="pg_rgb_image" type="string" value="/camera/highres_rgb/image"/>
-    <param name="pg_rgb_info" type="string" value="/camera/highres_rgb/camera_info"/>
-    <param name="xtion_points" type="string" value="/camera/points"/>
+    <param name="xtion_rgb_image" type="str" value="/camera/lowres_rgb/image"/>
+    <param name="xtion_depth_image" type="str" value="/camera/depth/image"/>
+    <param name="xtion_rgb_info" type="str" value="/camera/lowres_rgb/camera_info"/>
+    <param name="xtion_depth_info" type="str" value="/camera/depth/camera_info"/>
+    <param name="pg_rgb_image" type="str" value="/camera/highres_rgb/image"/>
+    <param name="pg_rgb_info" type="str" value="/camera/highres_rgb/camera_info"/>
+    <param name="xtion_points" type="str" value="/camera/points"/>
+
+    <!-- parameter for rgb recogniser -->
+    <!-- detector -->
+    <param name="rgb_dp_t" type="str" value="sift"/>
+    <!-- matcher -->
+    <param name="rgb_mp_q" type="double" value="5.0"/>
+    <param name="rgb_mp_r" type="double" value="0.8"/>
+    <param name="rgb_mp_d" type="int" value="128"/>
+    <param name="rgb_mp_t" type="str" value="sift"/>
+    <!-- cluster -->
+    <param name="rgb_cp_r" type="double" value="200"/>
+    <param name="rgb_cp_mg" type="double" value="20"/>
+    <param name="rgb_cp_mp" type="int" value="7"/>
+    <param name="rgb_cp_mi" type="int" value="100"/>
+    <!-- levmar 1 -->
+    <param name="rgb_lmp1_mr" type="int" value="600"/>
+    <param name="rgb_lmp1_ml" type="int" value="200"/>
+    <param name="rgb_lmp1_mopc" type="int" value="4"/>
+    <param name="rgb_lmp1_npa" type="int" value="5"/>
+    <param name="rgb_lmp1_mppo" type="int" value="6"/>
+    <param name="rgb_lmp1_et" type="double" value="10"/>
+    <!-- proj 1 -->
+    <param name="rgb_pp1_mp" type="int" value="5"/>
+    <param name="rgb_pp1_fd" type="double" value="4096."/>
+    <param name="rgb_pp1_ms" type="double" value="2."/>
+    <!-- levmar 2 -->
+    <param name="rgb_lmp2_mr" type="int" value="100"/>
+    <param name="rgb_lmp2_ml" type="int" value="500"/>
+    <param name="rgb_lmp2_mopc" type="int" value="4"/>
+    <param name="rgb_lmp2_npa" type="int" value="6"/>
+    <param name="rgb_lmp2_mppo" type="int" value="8"/>
+    <param name="rgb_lmp2_et" type="double" value="5"/>
+    <!-- proj 2 -->
+    <param name="rgb_pp2_mp" type="int" value="7"/>
+    <param name="rgb_pp2_fd" type="double" value="4096."/>
+    <param name="rgb_pp2_ms" type="double" value="3."/>
+
+    <!-- parameter for rgbd recogniser -->
+    <!-- detector -->
+    <param name="rgbd_dp_t" type="str" value="sift"/>
+    <!-- matcher -->
+    <param name="rgbd_mp_q" type="double" value="5.0"/>
+    <param name="rgbd_mp_r" type="double" value="0.8"/>
+    <param name="rgbd_mp_d" type="int" value="128"/>
+    <param name="rgbd_mp_t" type="str" value="sift"/>
+    <!-- cluster -->
+    <param name="rgbd_cp_r" type="double" value="30."/>
+    <param name="rgbd_cp_mg" type="double" value="5."/>
+    <param name="rgbd_cp_mp" type="int" value="7"/>
+    <param name="rgbd_cp_mi" type="int" value="100"/>
+    <!-- svd -->
+    <param name="rgbd_sp_e" type="double" value="1.0"/>
+    <param name="rgbd_sp_m" type="int" value="7"/>
 
   </node>
 </launch>

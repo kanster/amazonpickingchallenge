@@ -5,7 +5,7 @@
     <param name="json" type="str" value="../data/201505041207.json"/>
 
     <!-- sensor data directory -->
-    <param name="data_dir" type="str" value="../data/201505010645/"/>
+    <param name="data_dir" type="str" value="../data/201505060922/"/>
 
     <!-- use point cloud or depth image -->
     <param name="use_cloud" type="bool" value="false"/>
@@ -29,8 +29,9 @@
     <param name="ori_xtion_depth_image" type="string" value="/camera/depth/image_raw"/>
     <param name="ori_xtion_rgb_info" type="string" value="/camera/rgb/camera_info"/>
     <param name="ori_xtion_depth_info" type="string" value="/camera/depth/camera_info"/>
-    <param name="ori_pg_rgb_image" type="string" value="/rgb_image"/>
-    <param name="ori_pg_rgb_info" type="string" value="/camera_info"/>
+    <param name="ori_xtion_cloud" type="string" value="/camera/depth_registered/points"/>
+    <param name="ori_pg_rgb_image" type="string" value="/camera/rgb/image_color"/>
+    <param name="ori_pg_rgb_info" type="string" value="/camera/rgb/camera_info"/>
 
     <!-- online or offline sensor data -->
     <!-- true: data from xtion (and pg) -->
@@ -40,6 +41,6 @@
     <!-- with or without pg -->
     <!-- true: with pointgrey highres camera -->
     <!-- false:without pointgrey highres camera -->
-    <param name="use_pg" type="bool" value="false"/>
+    <param name="use_pg" type="bool" value="true"/>
   </node>
 </launch>

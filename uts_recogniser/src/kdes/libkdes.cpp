@@ -146,8 +146,8 @@ bool KernelDescManager::Process(MatrixXf&imfea, IplImage* image, const VectorXf&
 }
 
 bool KernelDescManager::Process(MatrixXf&imfea, IplImage* image) {
+
     //========================================================================
-    // cout << "step 1\n";
     if ( !(MODEL_TYPE==1 || MODEL_TYPE==2) ) {
         printf("MODEL_TYPE %d unsupported.\n",MODEL_TYPE);
         return false;
@@ -172,8 +172,9 @@ bool KernelDescManager::Process(MatrixXf&imfea, IplImage* image) {
     }
 
 
+
+
     //========================================================================
-    // cout << "step 2\n";
 
     IplImage* img;
 
@@ -206,16 +207,14 @@ bool KernelDescManager::Process(MatrixXf&imfea, IplImage* image) {
     }
 
 
-    //========================================================================
-    // cout << "step 3\n";
 
+
+    //========================================================================
     int img_w=img->width, img_h=img->height;
     //void GKDESDense(IplImage* im, matvarplus_t* kdes_params, float grid_space, float patch_size, float low_contrast) {
     if ( use_output == true )
         cout << "Start KDES computation..." << "(" << img_w << " " << img_h << ")" << endl;
-    Timer timer;
-    double exec_time, exec_time2;
-    timer.start();
+
     MatrixXf feaArr, feaMag, fgrid_y, fgrid_x;
     if (MODEL_TYPE==0 || MODEL_TYPE==3) {
         //cvCvtColor(im, im_temp, CV_RGB2GRAY);
@@ -226,46 +225,22 @@ bool KernelDescManager::Process(MatrixXf&imfea, IplImage* image) {
         cout << "before GKDESDense\n";
     }
     if (MODEL_TYPE==2) {
-
-        // cout << "Parameters: " << get_value<float>(this->model_kdes, "modelrgbkdes->kdes->grid_space") << ", " <<
-            // get_value<float>(this->model_kdes, "modelrgbkdes->kdes->patch_size") << endl;
+//        struct timeval t1;
+//        gettimeofday(&t1, NULL);
+//        long int ms1 = t1.tv_sec * 1000 + t1.tv_usec / 1000; //get current timestamp in milliseconds
         RGBKDESDense(feaArr, feaMag, fgrid_y, fgrid_x, img, this->kdes_params, get_value<float>(this->model_kdes, "modelrgbkdes->kdes->grid_space"), get_value<float>(this->model_kdes, "modelrgbkdes->kdes->patch_size"));
-
+//        struct timeval t2;
+//        gettimeofday(&t2, NULL);
+//        long int ms2 = t2.tv_sec * 1000 + t2.tv_usec / 1000; //get current timestamp in milliseconds
+//        cout << "Time duration in KDES: " << ms2-ms1 << endl;
     }
     if (MODEL_TYPE==4) {
         cout << "before SpinKDESDense\n";
         SpinKDESDense(feaArr, fgrid_y, fgrid_x, img, this->top_left, this->kdes_params, get_value<float>(this->model_kdes, "modelspinkdes->kdes->grid_space"), get_value<float>(this->model_kdes, "modelspinkdes->kdes->patch_size"));
         cout << "after SpinKDESDense\n";
     }
-    exec_time = timer.get();
-    //cout << "KDES Execution time... " << exec_time << endl;
-    /*
-    ofstream outkdes("kdes.txt");
-    for ( int y = 0; y < feaArr.rows(); ++ y ) {
-        for ( int x = 0; x < feaArr.cols(); ++ x )
-            outkdes << feaArr(y, x) << " ";
-        outkdes << endl;
-    }
-    outkdes.close();
 
-    ofstream outx("gridx.txt");
-    for ( int y = 0; y < fgrid_x.rows(); ++ y ) {
-        for ( int x = 0; x < fgrid_x.cols(); ++ x )
-            outx << fgrid_x(y, x) << " ";
-        outx << endl;
-    }
-    outx.close();
 
-    ofstream outy("gridy.txt");
-    for ( int y = 0; y < fgrid_x.rows(); ++ y ) {
-        for ( int x = 0; x < fgrid_x.cols(); ++ x )
-            outy << fgrid_y(y, x) << " ";
-        outy << endl;
-    }
-    outy.close();
-    */
-    // cout << "step 4\n";
-    timer.start();
     //  MatrixXf imfea;
     MatrixXf emkWords;
     get_matrix(emkWords, this->model_kdes, (string(this->model_var)+"->emk->words").c_str());
@@ -274,26 +249,20 @@ bool KernelDescManager::Process(MatrixXf&imfea, IplImage* image) {
     MatrixXf emkPyramid;
     get_matrix(emkPyramid, this->model_kdes, (string(this->model_var)+"->emk->pyramid").c_str());
 
+//    struct timeval t4;
+//    gettimeofday(&t4, NULL);
+//    long int ms4 = t4.tv_sec * 1000 + t4.tv_usec / 1000; //get current timestamp in milliseconds
+//    cout << "4: " << ms4 << endl;
     CKSVDEMK(imfea, feaArr, feaMag, fgrid_y, fgrid_x, img_h, img_w, emkWords, emkG, emkPyramid, get_value<float>(this->model_kdes, (string(this->model_var)+"->emk->kparam").c_str()) );
-    /*
-    ofstream oImfea("imfea.txt");
-    for ( int y = 0; y < imfea.rows(); ++ y ) {
-        for ( int x = 0; x < imfea.cols(); ++ x )
-            oImfea << imfea(y,x) << " ";
-        oImfea << endl;
-    }
-    oImfea.close();
-    */
-    exec_time2 = timer.get();
-    //cout << "EMK Execution time... " << exec_time2 << endl;
-    //cout << "Total Execution time... " << exec_time+exec_time2 << endl;
-//    cout << "Execution time: " << setw(8) << exec_time+exec_time2 << "    " << endl;
-    //printf("end\n");
+//    struct timeval t5;
+//    gettimeofday(&t5, NULL);
+//    long int ms5 = t5.tv_sec * 1000 + t5.tv_usec / 1000; //get current timestamp in milliseconds
+//    cout << "5: " << ms5 << endl;
+
+
+
     cvReleaseImage(&img);
-    //	if (img)
-    //		cvReleaseImage(&img);
-    //	if (modelkdes)
-    //		delete modelkdes;
+
 
     fflush(stdout);
     return true;

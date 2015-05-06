@@ -2,13 +2,13 @@
   <node name="uts_init" cwd="node" pkg="uts_recogniser" type="uts_init" output="screen">
 
     <!-- save data directory -->
-    <param name="save_dir" type="str" value="../data/201505041009/"/>
+    <param name="save_dir" type="str" value="../data/201505060922/"/>
 
     <!-- use point grey high reso image -->
     <param name="use_pg" type="bool" value="false"/>
 
     <!-- number of bins -->
-    <param name="n_bin" type="int" value="1"/>
+    <param name="n_bin" type="int" value="12"/>
 
     <!-- topic names -->
     <param name="xtion_rgb_image" type="str" value="/camera/rgb/image_color"/>

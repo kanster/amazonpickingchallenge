@@ -11,6 +11,10 @@ private:
     Vector4f camera_params_;
 
 public:
+    //! constructor
+    ProjectionFilter( ProjParam pp );
+
+    //! init parameters
     void init_params( int min_points, float feature_distance, float min_score, Vector4f camera_params );
     void process( SP_Model & model, vector<MatchRGB> &matches, vector<list<int> > & clusters, list<SP_Object> &objects );
 };

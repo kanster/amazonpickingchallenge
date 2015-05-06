@@ -9,13 +9,15 @@ private:
     string method_;
 
 public:
-    // constructor with parametrisation
+    //! constructor with parametrisation
+    FeatureDetector( DetectorParam dp );
+
     FeatureDetector( string method );
 
-    // process rgb features
+    //! process rgb features
     vector< DetectedFeatureRGB > process( const cv::Mat & image, cv::Mat mask_image = cv::Mat( 480, 640, CV_8UC1, cv::Scalar::all(255) ) );
 
-    // process rgbd features
+    //! process rgbd features
     vector< DetectedFeatureRGBD > process( const cv::Mat & image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, cv::Mat mask_image = cv::Mat(480, 640, CV_8UC1, cv::Scalar::all(255)) );
 };
 

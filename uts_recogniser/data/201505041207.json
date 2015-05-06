@@ -1,0 +1,117 @@
+{
+    "bin_contents":
+    {
+        "bin_A":
+        [
+            "highland_6539_self_stick_notes",
+            "munchkin_white_hot_duck_bath_toy"
+        ],
+        "bin_B":
+        [
+            "safety_works_safety_glasses",
+            "laugh_out_loud_joke_book",
+            "paper_mate_12_count_mirado_black_warrior"
+        ],
+        "bin_C":
+        [
+            "kong_duck_dog_toy",
+            "dr_browns_bottle_brush"
+        ],
+        "bin_D":
+        [
+            "kong_duck_dog_toy",
+            "laugh_out_loud_joke_book"
+        ],
+        "bin_E":
+        [
+            "sharpie_accent_tank_style_highlighters"
+        ],
+        "bin_F":
+        [
+            "highland_6539_self_stick_notes",
+            "safety_works_safety_glasses",
+            "feline_greenies_dental_treats"
+        ],
+        "bin_G":
+        [
+            "kong_air_dog_squeakair_tennis_ball",
+            "stanley_66_052",
+            "sharpie_accent_tank_style_highlighters"
+        ],
+        "bin_H":
+        [
+            "mommys_helper_outlet_plugs",
+            "kyjen_squeakin_eggs_plush_puppies",
+            "kong_air_dog_squeakair_tennis_ball"
+        ],
+        "bin_I":
+        [
+            "mead_index_cards"
+        ],
+        "bin_J":
+        [
+            "mark_twain_huckleberry_finn",
+            "expo_dry_erase_board_eraser"
+        ],
+        "bin_K":
+        [
+            "kong_duck_dog_toy"
+        ],
+        "bin_L":
+        [
+            "dr_browns_bottle_brush",
+            "dr_browns_bottle_brush"
+        ]
+    },
+    "work_order":
+    [
+        {
+            "bin": "bin_A",
+            "item": "munchkin_white_hot_duck_bath_toy"
+        },
+        {
+            "bin": "bin_B",
+            "item": "safety_works_safety_glasses"
+        },
+        {
+            "bin": "bin_C",
+            "item": "kong_duck_dog_toy"
+        },
+        {
+            "bin": "bin_D",
+            "item": "kong_duck_dog_toy"
+        },
+        {
+            "bin": "bin_E",
+            "item": "sharpie_accent_tank_style_highlighters"
+        },
+        {
+            "bin": "bin_F",
+            "item": "feline_greenies_dental_treats"
+        },
+        {
+            "bin": "bin_G",
+            "item": "stanley_66_052"
+        },
+        {
+            "bin": "bin_H",
+            "item": "kong_air_dog_squeakair_tennis_ball"
+        },
+        {
+            "bin": "bin_I",
+            "item": "mead_index_cards"
+        },
+        {
+            "bin": "bin_J",
+            "item": "expo_dry_erase_board_eraser"
+        },
+        {
+            "bin": "bin_K",
+            "item": "kong_duck_dog_toy"
+        },
+        {
+            "bin": "bin_L",
+            "item": "dr_browns_bottle_brush"
+        }
+    ]
+}

@@ -23,7 +23,9 @@ private:
     template<typename T, int N> void mean_shift( vector< list<T> > & clusters, vector< pair<Eigen::Matrix<float, N, 1>, T> > & points);
 
 public:
-    // constructor with parametrisation
+    //! constructor with parametrisation
+    FeatureCluster( ClusterParam cp );
+
     FeatureCluster( float radius, float merge, int min_pts, int max_iterations );
 
     vector< list<int> > process( const vector<MatchRGB> & matches );

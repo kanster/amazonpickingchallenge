@@ -2,6 +2,11 @@
 
 
 // constructor with parametrisation
+SVDPoseEstimator::SVDPoseEstimator(SVDParam param) {
+    error_ = (float)param.error;
+    minpts_ = param.minpts;
+}
+
 SVDPoseEstimator::SVDPoseEstimator(float error, int minpts) {
     error_ = error;
     minpts_ = minpts;

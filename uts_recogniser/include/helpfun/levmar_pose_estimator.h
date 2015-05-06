@@ -43,7 +43,9 @@ private:
     void preprocess_all_matches( vector< LmData > &opt_data, const vector< MatchRGB > &matches ) ;
 
 public:
-    // init params
+    LevmarPoseEstimator( LevmarParam lmp );
+
+    //! init params
     void init_params( int max_ransac_tests, int max_lm_tests, int max_objects_per_cluster, int n_pts_align, int min_n_pts_object, float error_threshold, Vector4f levmar_camera_param );
 
 

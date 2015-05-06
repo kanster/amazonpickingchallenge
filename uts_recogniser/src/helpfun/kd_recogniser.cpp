@@ -30,6 +30,7 @@ vector<MatrixXf> KDRecogniser::SlidingWindowDetector::process(IplImage *ipl_imag
     double exec_time;
     Timer timer;
     timer.start();
+    int count = 0;
     for ( int iy = n_stepsy-1; iy >= 0; -- iy ) {
         for ( int ix = 0; ix < n_stepsx; ++ ix ) {
             int y = iy*step_size;
@@ -43,19 +44,26 @@ vector<MatrixXf> KDRecogniser::SlidingWindowDetector::process(IplImage *ipl_imag
 
             MatrixXf imfea;
             VectorXf scores;
-
+/*            double mexec_time;
+            Timer mtimer;
+            mtimer.start()*/;
             pkdm_->Process( imfea, patch );
             pkdm_->Classify( scores, imfea );
+
+
+//            mexec_time = mtimer.get();
+//            cout << "stepwise execution time: " << setw(8) << exec_time << "    " << endl;
 
             assert( scores.rows() == (int)pkdm_->GetModelList()->size() );
             for ( int i = 0; i < (int)pkdm_->GetModelList()->size(); ++ i ) {
                 all_scores[i](iy, ix) = scores(i);
             }
+            count ++;
 
         }
     }
     exec_time = timer.get();
-    cout << "Execution time: " << setw(8) << exec_time << "    " << endl;
+    cout << "Execution time: " << setw(8) << exec_time << "  for " << count << " windows" << endl;
 
     /*
     CvFont font;
@@ -75,6 +83,7 @@ vector<MatrixXf> KDRecogniser::SlidingWindowDetector::process(IplImage *ipl_imag
     for ( int i = 0; i < (int)indices.size(); ++ i ) {
         item_scores.push_back( all_scores[indices[i]] );
     }
+
     return item_scores;
 }
 
@@ -222,8 +231,9 @@ void KDRecogniser::process(vector<pair<string, vector<cv::Point> > > & results, 
     results.clear();
     // detailed mask image generation using subtraction
     // rgb image to gray scale image conversion
-    int threshold = 20;
-    cv::Mat sub_image;
+    int threshold = 50;
+    sub_image_.setTo( cv::Scalar(0) );
+//    cv::Mat sub_image_;
     if ( !use_rgb ) {
         cv::Mat empty_image_mono;
         cv::cvtColor( empty_image_, empty_image_mono, CV_BGR2GRAY );
@@ -233,7 +243,7 @@ void KDRecogniser::process(vector<pair<string, vector<cv::Point> > > & results, 
 
         cv::Mat diff_image_mono;
         cv::absdiff( empty_image_mono, item_image_mono, diff_image_mono );
-        cv::threshold( diff_image_mono, sub_image, threshold, 255.0, CV_THRESH_BINARY );
+        cv::threshold( diff_image_mono, sub_image_, threshold, 255.0, CV_THRESH_BINARY );
     }
     else {
         vector<cv::Mat> empty_image_rgbs;
@@ -248,17 +258,17 @@ void KDRecogniser::process(vector<pair<string, vector<cv::Point> > > & results, 
             cv::threshold( diff_image_rgbs[i], diff_image_rgbs[i], threshold, 255.0, CV_THRESH_BINARY );
         }
         cv::bitwise_or( diff_image_rgbs[0], diff_image_rgbs[1], diff_image_rgbs[1] );
-        cv::bitwise_or( diff_image_rgbs[1], diff_image_rgbs[2], sub_image );
+        cv::bitwise_or( diff_image_rgbs[1], diff_image_rgbs[2], sub_image_ );
     }
 
-//    cv::imshow( "sub_image", sub_image );
+//    cv::imshow( "sub_image_", sub_image_ );
 
 
     // find blobs
     vector< vector<cv::Point2i> > blobs;
-    find_blobs( sub_image, blobs );
+    find_blobs( sub_image_, blobs );
     vector< pair<cv::Point2i, cv::Point2i> > blob_bbox;
-    cv::Mat mask_bbox( sub_image.rows, sub_image.cols, CV_8UC1, cv::Scalar::all(0) );
+    cv::Mat mask_bbox( sub_image_.rows, sub_image_.cols, CV_8UC1, cv::Scalar::all(0) );
     for ( int i = 0; i < (int)blobs.size(); ++ i ) {        
         pair<cv::Point2i, cv::Point2i> bbox; // min, max
         bbox.first.x = rgb_image_.cols;
@@ -288,11 +298,11 @@ void KDRecogniser::process(vector<pair<string, vector<cv::Point> > > & results, 
     // remove small bbox
     find_blobs( this->mask_image_, blobs );
     blob_bbox.clear();
-    mask_bbox = cv::Mat( sub_image.rows, sub_image.cols, CV_8UC1, cv::Scalar::all(0) );
+    mask_bbox = cv::Mat( sub_image_.rows, sub_image_.cols, CV_8UC1, cv::Scalar::all(0) );
     for ( int i = 0; i < (int)blobs.size(); ++ i ) {
         pair<cv::Point2i, cv::Point2i> bbox; // min, max
-        bbox.first.x = sub_image.cols;
-        bbox.first.y = sub_image.rows;
+        bbox.first.x = sub_image_.cols;
+        bbox.first.y = sub_image_.rows;
         bbox.second.x = 0;
         bbox.second.y = 0;
         for ( int j = 0; j < (int)blobs[i].size(); ++ j ) {
@@ -311,25 +321,27 @@ void KDRecogniser::process(vector<pair<string, vector<cv::Point> > > & results, 
             cv::rectangle( mask_bbox, bbox.first, bbox.second, cv::Scalar::all(255));
         }
     }
-    cv::imshow( "rectangle", mask_bbox );
+//    cv::imshow( "rectangle", mask_bbox );
 
 
 
     // generate indices for items
     // retrieve item classes
     vector<string> svm_models_list = *(this->swd_->get_models_list());
-    vector<pair<string, int> > objects_n = duplicated_bin_contents( this->target_bin_content_ );
+    dup_items_.clear();
+    dup_items_ = duplicated_bin_contents( this->target_bin_content_ );
 
     vector<int> content_in_svm_indices;
-    for ( int i = 0; i < (int)objects_n.size(); ++ i ) {
-        int pos = find(svm_models_list.begin(), svm_models_list.end(), objects_n[i].first) - svm_models_list.begin();
-        cout << "Name: " << objects_n[i].first << ", " << pos << endl;
+    for ( int i = 0; i < (int)dup_items_.size(); ++ i ) {
+        int pos = find(svm_models_list.begin(), svm_models_list.end(), dup_items_[i].first) - svm_models_list.begin();
+        cout << "Name: " << dup_items_[i].first << ", " << pos << endl;
         content_in_svm_indices.push_back( pos );
     }
 
+//    cv::waitKey(0);
 
     // 1st vector: each item, 2 nd vector each patch
-    vector< vector<MatrixXf> > scores_for_contents( objects_n.size() );
+    vector< vector<MatrixXf> > scores_for_contents( dup_items_.size() );
     int step_size = 16;
     int patch_size = 64;
     IplImage * image = new IplImage(this->rgb_image_);
@@ -341,19 +353,22 @@ void KDRecogniser::process(vector<pair<string, vector<cv::Point> > > & results, 
         cvCopy(image, patch);
         // object detector
         if ( patch->height < 64 || patch->width < 64 ) {
-            KernelDescManager * pkdm = swd_->get_pkdm();
-            MatrixXf imfea;
-            VectorXf score;
-            pkdm->Process( imfea, patch );
-            pkdm->Classify( score, imfea );
-            VectorXf item_score(content_in_svm_indices.size());
-            for ( int y = 0; y < item_score.rows(); ++ y ) {
-                item_score(y,0) = score(content_in_svm_indices[y],0);
-            }
-            for ( int j = 0; j < (int)objects_n.size(); ++ j ) {
-                MatrixXf score(1,1);
-                score << item_score(j, 0);
-                scores_for_contents[j].push_back(score);
+            if ( (patch->height)*1.0/(patch->width) < 3 &&
+                 (patch->height)*1.0/(patch->width) > 0.33 ) {
+                KernelDescManager * pkdm = swd_->get_pkdm();
+                MatrixXf imfea;
+                VectorXf score;
+                pkdm->Process( imfea, patch );
+                pkdm->Classify( score, imfea );
+                VectorXf item_score(content_in_svm_indices.size());
+                for ( int y = 0; y < item_score.rows(); ++ y ) {
+                    item_score(y,0) = score(content_in_svm_indices[y],0);
+                }
+                for ( int j = 0; j < (int)dup_items_.size(); ++ j ) {
+                    MatrixXf score(1,1);
+                    score << item_score(j, 0);
+                    scores_for_contents[j].push_back(score);
+                }
             }
         }
         else {
@@ -452,9 +467,9 @@ void KDRecogniser::process(vector<pair<string, vector<cv::Point> > > & results, 
              boost::bind(&pair<float, cv::Point2i>::first, _1) > boost::bind(&pair<float, cv::Point2i>::first, _2));
 
         // select top n items according to objects no. in this bin
-        int n_objecti = objects_n[i].second;
+        int n_objecti = dup_items_[i].second;
         for ( int j = 0; j < n_objecti; ++ j ) {
-            string object_name = objects_n[i].first;
+            string object_name = dup_items_[i].first;
             vector<cv::Point> pts;
             pts.push_back( cv::Point(scores_pt[i][j].second.x, scores_pt[i][j].second.y) );
             pts.push_back( cv::Point(scores_pt[i][j].second.x, scores_pt[i][j].second.y+patch_size) );
@@ -504,3 +519,11 @@ void KDRecogniser::process(vector<pair<string, vector<cv::Point> > > & results, 
     }
 }
 
+cv::Mat KDRecogniser::get_mask_image() {
+    return mask_image_;
+}
+
+
+vector<pair<string, int> > KDRecogniser::get_dup_items() {
+    return dup_items_;
+}

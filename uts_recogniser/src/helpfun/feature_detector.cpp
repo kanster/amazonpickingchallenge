@@ -1,11 +1,15 @@
 #include "include/helpfun/feature_detector.h"
 
-// constructor
+//! constructor
+FeatureDetector::FeatureDetector(DetectorParam dp) {
+    method_ = dp.type;
+}
+
 FeatureDetector::FeatureDetector(string method) {
     method_ = method;
 }
 
-// process rgb features
+//! process rgb features
 vector< DetectedFeatureRGB > FeatureDetector::process( const cv::Mat & image, cv::Mat mask_image) {
     vector<DetectedFeatureRGB> detected_features;
     cv::Mat mono_image;
@@ -38,6 +42,7 @@ vector< DetectedFeatureRGB > FeatureDetector::process( const cv::Mat & image, cv
 
     return detected_features;
 }
+
 
 vector<DetectedFeatureRGBD> FeatureDetector::process(const cv::Mat &image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, cv::Mat mask_image ) {
     vector<DetectedFeatureRGBD> detected_features;

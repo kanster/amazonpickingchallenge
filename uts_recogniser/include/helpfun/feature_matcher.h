@@ -22,16 +22,18 @@ private:
     ANNkd_tree * kdtree_;
 
 public:
-    // constructor with parametrisation
+    //! constructor with parametrisation
+    FeatureMatcher( MatcherParam mp );
+
     FeatureMatcher( float quality, float ratio, int descriptor_size, string descriptor_type );
 
-    // load models
+    //! load models
     void load_models( vector<SP_Model> & models );
 
-    // process matching
+    //! process matching
     vector<MatchRGB> process( vector<DetectedFeatureRGB> &features, int object_in_bin );
 
-    // process matching rgbd
+    //! process matching rgbd
     vector<MatchRGBD> process(vector<DetectedFeatureRGBD> &features, int object_in_bin);
 };
 

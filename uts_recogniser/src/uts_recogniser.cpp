@@ -17,8 +17,6 @@
 
 #include <pcl/console/parse.h>
 
-#define foreach( i, c ) for( typeof((c).begin()) i##_hid=(c).begin(), *i##_hid2=((typeof((c).begin())*)1); i##_hid2 && i##_hid!=(c).end(); ++i##_hid) for( typeof( *(c).begin() ) &i=*i##_hid, *i##_hid3=(typeof( *(c).begin() )*)(i##_hid2=NULL); !i##_hid3 ; ++i##_hid3, ++i##_hid2)
-
 const string g_rgb_win_name     = "rgb_image";
 const string g_mask_win_name    = "mask_image";
 
@@ -39,14 +37,69 @@ OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh)
     nh_->param<std::string>("eb_temp_conf", temp_conf_path_, "/tmp/apc/eb/temp.conf");
     nh_->param<std::string>("xml_dir", xml_dir_, "/tmp/apc/xml/");
     nh_->param<std::string>("mask_dir", mask_dir_, "/tmp/apc/mask/");
-    nh_->param<bool>("use_cloud", use_cloud_, false);
 
     nh_->param<std::string>("object_topic_name", object_topic_name_, "/object_poses");
     nh_->param<std::string>("object_srv_name", object_srv_name_, "/recog_publish_srv");
     nh_->param<std::string>("target_srv_name", target_srv_name_, "/data_publish_srv");
 
     nh_->param<int>("op_mode", op_mode_, 1);
+    // initialize parameters
+    if ( op_mode_ > 3 ) {
+        // RGB parameters
+        nh_->param<string>("rgb_dp_t", rgb_param_.dp.type, "sift");
+
+        nh_->param<double>("rgb_mp_q", rgb_param_.mp.quality, 5.0);
+        nh_->param<double>("rgb_mp_r", rgb_param_.mp.ratio, 0.8);
+        nh_->param<int>("rgb_mp_d", rgb_param_.mp.descrip_size, 128);
+        nh_->param<string>("rgb_mp_t", rgb_param_.mp.type, "sift");
+
+        nh_->param<double>("rgb_cp_r", rgb_param_.cp.radius, 200);
+        nh_->param<double>("rgb_cp_mg", rgb_param_.cp.merge, 20);
+        nh_->param<int>("rgb_cp_mp", rgb_param_.cp.minpts, 7);
+        nh_->param<int>("rgb_cp_mi", rgb_param_.cp.maxiters, 100);
+
+        nh_->param<int>("rgb_lmp1_mr", rgb_param_.lmp1.max_ransac, 600);
+        nh_->param<int>("rgb_lmp1_ml", rgb_param_.lmp1.max_lm, 200);
+        nh_->param<int>("rgb_lmp1_mopc", rgb_param_.lmp1.max_objs_per_cluster, 4);
+        nh_->param<int>("rgb_lmp1_npa", rgb_param_.lmp1.n_pts_align, 5);
+        nh_->param<int>("rgb_lmp1_mppo", rgb_param_.lmp1.min_pts_per_obj, 6);
+        nh_->param<double>("rgb_lmp1_et", rgb_param_.lmp1.error_threshold, 10);
+
+        nh_->param<int>("rgb_pp1_mp", rgb_param_.pp1.min_pts, 5);
+        nh_->param<double>("rgb_pp1_fd", rgb_param_.pp1.feat_distance, 4096.);
+        nh_->param<double>("rgb_pp1_ms", rgb_param_.pp1.min_score, 2.);
+
+        nh_->param<int>("rgb_lmp2_mr", rgb_param_.lmp2.max_ransac, 100);
+        nh_->param<int>("rgb_lmp2_ml", rgb_param_.lmp2.max_lm, 500);
+        nh_->param<int>("rgb_lmp2_mopc", rgb_param_.lmp2.max_objs_per_cluster, 4);
+        nh_->param<int>("rgb_lmp2_npa", rgb_param_.lmp2.n_pts_align, 6);
+        nh_->param<int>("rgb_lmp2_mppo", rgb_param_.lmp2.min_pts_per_obj, 8);
+        nh_->param<double>("rgb_lmp2_et", rgb_param_.lmp2.error_threshold, 5);
+
+        nh_->param<int>("rgb_pp2_mp", rgb_param_.pp2.min_pts, 7);
+        nh_->param<double>("rgb_pp2_fd", rgb_param_.pp2.feat_distance, 4096.);
+        nh_->param<double>("rgb_pp2_ms", rgb_param_.pp2.min_score, 3.);
+
+        // RGBD parameters
+        nh_->param<string>("rgbd_dp_t", rgbd_param_.dp.type, "sift");
+
+        nh_->param<double>("rgbd_mp_q", rgbd_param_.mp.quality, 5.0);
+        nh_->param<double>("rgbd_mp_r", rgbd_param_.mp.ratio, 0.8);
+        nh_->param<int>("rgbd_mp_d", rgbd_param_.mp.descrip_size, 128);
+        nh_->param<string>("rgbd_mp_t", rgbd_param_.mp.type, "sift");
+
+        nh_->param<double>("rgbd_cp_r", rgbd_param_.cp.radius, 30.);
+        nh_->param<double>("rgbd_cp_mg", rgbd_param_.cp.merge, 5.);
+        nh_->param<int>("rgbd_cp_mp", rgbd_param_.cp.minpts, 7);
+        nh_->param<int>("rgbd_cp_mi", rgbd_param_.cp.maxiters, 100);
+
+        nh_->param<double>("rgbd_sp_e", rgbd_param_.sp.error, 1.);
+        nh_->param<int>("rgbd_sp_m", rgbd_param_.sp.minpts, 7);
+    }
+
     nh_->param<int>("srv_mode", srv_mode_, 1);
+
+    nh_->param<bool>("use_pg", use_pg_, false);
 
     sensor_data_ptr_ = &sensor_data_;
     load_method_config( method_path_ );
@@ -62,35 +115,59 @@ OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh)
     //! init eblearn recogniser
     ebr_.init( temp_conf_path_, eb_dir_ );
 
-
     if ( srv_mode_ == 1 ) {
+        recog_pub_ = nh.advertise<apc_msgs::BinObjects>(object_topic_name_, 100);
+        recog_client_ = nh.serviceClient<apc_msgs::RecogStatus>( object_srv_name_ );
+
+        ros::ServiceServer target_srv = nh_->advertiseService( target_srv_name_, &OfflineRecogniser::target_srv_callback, this );
+
         // resolve topic name
         nh_->param<std::string>("xtion_rgb_image", xtion_rgb_topic_, "/camera/lowres_rgb/image");
         nh_->param<std::string>("xtion_depth_image", xtion_depth_topic_, "/camera/depth/image");
         nh_->param<std::string>("xtion_rgb_info", xtion_rgb_info_topic_, "/camera/lowres_rgb/camera_info");
-        nh_->param<std::string>("xtion_depth_info", xtion_depth_info_topic_, "/camera/depth/camera_info");
-        nh_->param<std::string>("pg_rgb_image", camera_rgb_topic_, "/camera/highres_rgb/image");
-        nh_->param<std::string>("pg_rgb_info", camera_rgb_info_topic_, "/camera/highres_rgb/camera_info");
+        nh_->param<std::string>("pg_rgb_image", pg_rgb_topic_, "/camera/highres_rgb/image");
+        nh_->param<std::string>("pg_rgb_info", pg_rgb_info_topic_, "/camera/highres_rgb/camera_info");
 
 
         ROS_INFO( "subscribing to topic %s", xtion_rgb_topic_.c_str( ));
         ROS_INFO( "subscribing to topic %s", xtion_rgb_info_topic_.c_str( ));
         ROS_INFO( "subscribing to topic %s", xtion_depth_topic_.c_str() );
-        ROS_INFO( "subscribing to topic %s", xtion_depth_info_topic_.c_str() );
-        ROS_INFO( "subscribing to topic %s", camera_rgb_topic_.c_str());
-        ROS_INFO( "subscribing to topic %s", camera_rgb_info_topic_.c_str());
+        ROS_INFO( "subscribing to topic %s", pg_rgb_topic_.c_str());
+        ROS_INFO( "subscribing to topic %s", pg_rgb_info_topic_.c_str());
 
-        if ( use_cloud_ == true ) {
-            nh_->param<std::string>("xtion_points", xtion_cloud_topic_, "/camera/points");
-            ROS_INFO( "subscribing to topic %s", xtion_cloud_topic_.c_str());
+        xtion_rgb_sub_.subscribe(*nh_, xtion_rgb_topic_, 1 );
+        xtion_rgb_info_sub_.subscribe( *nh_, xtion_rgb_info_topic_, 1 );
+        xtion_depth_sub_.subscribe( *nh_, xtion_depth_topic_, 1 );
+
+        if ( use_pg_ == true ) {
+            pg_rgb_sub_.subscribe( *nh_, pg_rgb_topic_, 1 );
+            pg_rgb_info_sub_.subscribe( *nh_, pg_rgb_info_topic_, 1 );
+            m_sensor_sync_.reset( new message_filters::Synchronizer<sensor_sync_policy>( sensor_sync_policy(100), xtion_rgb_sub_, xtion_rgb_info_sub_, xtion_depth_sub_, pg_rgb_sub_, pg_rgb_info_sub_) );
+            m_sensor_sync_->registerCallback( boost::bind( &OfflineRecogniser::sensor_callback, this, _1, _2, _3, _4, _5) );
         }
-        recog_pub_ = nh.advertise<apc_msgs::BinObjects>(object_topic_name_, 100);
-        recog_client_ = nh.serviceClient<apc_msgs::RecogStatus>( object_srv_name_ );
+        else {
+            m_no_pg_sensor_sync_.reset( new message_filters::Synchronizer<no_pg_sensor_sync_policy>( no_pg_sensor_sync_policy(100), xtion_rgb_sub_, xtion_rgb_info_sub_, xtion_depth_sub_ ) );
+            m_no_pg_sensor_sync_->registerCallback( boost::bind( &OfflineRecogniser::sensor_callback_no_pg, this, _1, _2, _3 ) );
+        }
+        process_thread_ = boost::thread(boost::bind(&OfflineRecogniser::process, this));
+        ros::MultiThreadedSpinner spinner(2);
+        ros::Rate loop(10);
+        while ( ros::ok() ) {
+            spinner.spin();
+            loop.sleep();
+        }
     }
     else if ( srv_mode_ == 2 ) {
         ROS_INFO("constructor in block mode");
+        ros::ServiceServer target_srv = nh_->advertiseService( target_srv_name_, &OfflineRecogniser::target_srv_callback_block, this );
+        process_thread_ = boost::thread( boost::bind(&OfflineRecogniser::process, this) );
+        ros::MultiThreadedSpinner spinner(2);
+        ros::Rate loop(10);
+        while ( ros::ok() ) {
+            spinner.spin();
+            loop.sleep();
+        }
     }
-
 
 }
 
@@ -111,14 +188,11 @@ OfflineRecogniser::~OfflineRecogniser() {
 void OfflineRecogniser::sensor_callback( const sensor_msgs::ImageConstPtr & rgb_image_msg,
                                          const sensor_msgs::CameraInfoConstPtr & rgb_image_info,
                                          const sensor_msgs::ImageConstPtr & depth_image_msg,
-                                         const sensor_msgs::CameraInfoConstPtr & depth_image_info,
-                                         const sensor_msgs::ImageConstPtr & camera_image_msg,
-                                         const sensor_msgs::CameraInfoConstPtr & camera_image_info,
-                                         const sensor_msgs::PointCloud2ConstPtr & cloud_ptr_msg ) {
+                                         const sensor_msgs::ImageConstPtr & pg_image_msg,
+                                         const sensor_msgs::CameraInfoConstPtr & pg_image_info ) {
     ROS_INFO_ONCE( "[sensor_callback] Sensor information available" );
 
     bool lrecg, icap;
-
     srvc_mutex_.lock();
     lrecg = recogniser_done_;
     icap = image_captured_;
@@ -126,19 +200,35 @@ void OfflineRecogniser::sensor_callback( const sensor_msgs::ImageConstPtr & rgb_
 
     if (!lrecg && !icap) {
         SensorData* data = sensor_data_ptr_;
-        xtion_rgb_model_.fromCameraInfo( rgb_image_info );
-        xtion_depth_model_.fromCameraInfo( depth_image_info );
-        camera_rgb_model_.fromCameraInfo( camera_image_info );
+        data->xtion_rgb_model.fromCameraInfo( rgb_image_info );
+        data->pg_rgb_model.fromCameraInfo( pg_image_info );
 
-        // set buffer info
-        data->xtion_rgb_ptr     = cv_bridge::toCvCopy( rgb_image_msg, sensor_msgs::image_encodings::BGR8 );
-        data->xtion_depth_ptr   = cv_bridge::toCvCopy( depth_image_msg, sensor_msgs::image_encodings::TYPE_32FC1 );
-        data->use_cloud = true;
-        data->xtion_cloud_ptr   = pcl::PointCloud<pcl::PointXYZRGB>::Ptr( new pcl::PointCloud<pcl::PointXYZRGB>( ));
-        pcl::fromROSMsg( *cloud_ptr_msg, *(data->xtion_cloud_ptr) );
+        cv_bridge::CvImagePtr cv_ptr;
+        try {
+            cv_ptr = cv_bridge::toCvCopy(rgb_image_msg, sensor_msgs::image_encodings::BGR8);
+        }catch (cv_bridge::Exception& e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+        data->xtion_rgb = cv_ptr->image;
 
-        data->camera_rgb_ptr    = cv_bridge::toCvCopy( camera_image_msg, sensor_msgs::image_encodings::BGR8 );
-//        camera_rgb_model_.rectifyImage( data->camera_rgb_ptr->image, data->camera_rgb_ptr->image );
+        try {
+            cv_ptr = cv_bridge::toCvCopy(depth_image_msg, sensor_msgs::image_encodings::MONO16);
+        }catch (cv_bridge::Exception& e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+        data->xtion_depth = cv_ptr->image;
+
+        data->use_pg = true;
+        try {
+            cv_ptr = cv_bridge::toCvCopy(pg_image_msg, sensor_msgs::image_encodings::BGR8);
+        }catch (cv_bridge::Exception& e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+        data->pg_rgb = cv_ptr->image;
+
         {
             boost::mutex::scoped_lock lock(sensor_mutex_);
             sensor_empty_ = false;
@@ -153,12 +243,9 @@ void OfflineRecogniser::sensor_callback( const sensor_msgs::ImageConstPtr & rgb_
 
 
 // sensor callback without point cloud
-void OfflineRecogniser::sensor_callback_no_cloud(const sensor_msgs::ImageConstPtr &rgb_image_msg,
+void OfflineRecogniser::sensor_callback_no_pg(  const sensor_msgs::ImageConstPtr &rgb_image_msg,
                                                 const sensor_msgs::CameraInfoConstPtr &rgb_image_info,
-                                                const sensor_msgs::ImageConstPtr &depth_image_msg,
-                                                const sensor_msgs::CameraInfoConstPtr &depth_image_info,
-                                                const sensor_msgs::ImageConstPtr &camera_image_msg,
-                                                const sensor_msgs::CameraInfoConstPtr &camera_image_info) {
+                                                const sensor_msgs::ImageConstPtr &depth_image_msg) {
     ROS_INFO_ONCE( "[sensor_callback] Sensor information available" );
 
     bool lrecg, icap;
@@ -169,17 +256,26 @@ void OfflineRecogniser::sensor_callback_no_cloud(const sensor_msgs::ImageConstPt
     srvc_mutex_.unlock();
     if (!lrecg && !icap) {
         SensorData* data = sensor_data_ptr_;
-        xtion_rgb_model_.fromCameraInfo( rgb_image_info );
-        xtion_depth_model_.fromCameraInfo( depth_image_info );
-        camera_rgb_model_.fromCameraInfo( camera_image_info );
+        data->xtion_rgb_model.fromCameraInfo( rgb_image_info );
 
-        // set buffer info
-        data->xtion_rgb_ptr     = cv_bridge::toCvCopy( rgb_image_msg, sensor_msgs::image_encodings::BGR8 );
-        data->xtion_depth_ptr   = cv_bridge::toCvCopy( depth_image_msg, sensor_msgs::image_encodings::TYPE_32FC1 );
-        data->use_cloud = false;
+        cv_bridge::CvImagePtr cv_ptr;
+        try {
+            cv_ptr = cv_bridge::toCvCopy(rgb_image_msg, sensor_msgs::image_encodings::BGR8);
+        }catch (cv_bridge::Exception& e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+        data->xtion_rgb = cv_ptr->image;
 
-        data->camera_rgb_ptr    = cv_bridge::toCvCopy( camera_image_msg, sensor_msgs::image_encodings::BGR8 );
-//        camera_rgb_model_.rectifyImage( data->camera_rgb_ptr->image, data->camera_rgb_ptr->image );
+        try {
+            cv_ptr = cv_bridge::toCvCopy(depth_image_msg, sensor_msgs::image_encodings::MONO16);
+        }catch (cv_bridge::Exception& e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+        data->xtion_depth = cv_ptr->image;
+
+        data->use_pg = false;
         {
             boost::mutex::scoped_lock lock(sensor_mutex_);
             sensor_empty_ = false;
@@ -251,18 +347,34 @@ bool OfflineRecogniser::target_srv_callback_block(apc_msgs::RecogniseALG::Reques
 
         // set sensor information
         SensorData * data = sensor_data_ptr_;
-        xtion_rgb_model_.fromCameraInfo( req.xtion_rgb_info );
-        xtion_depth_model_.fromCameraInfo( req.xtion_depth_info );
-        camera_rgb_model_.fromCameraInfo( req.pg_rgb_info );
-        data->xtion_rgb_ptr     = cv_bridge::toCvCopy( req.xtion_rgb_image, sensor_msgs::image_encodings::BGR8 );
-        data->xtion_depth_ptr   = cv_bridge::toCvCopy( req.xtion_depth_image, sensor_msgs::image_encodings::TYPE_32FC1 );
-        //! @todo: add pg flag to recogniser
-//        data->camera_rgb_ptr    = cv_bridge::toCvCopy( req.pg_rgb_image, sensor_msgs::image_encodings::BGR8 );
-        data->use_cloud = req.use_cloud;
-        if ( data->use_cloud == true ) {
-            data->xtion_cloud_ptr   = pcl::PointCloud<pcl::PointXYZRGB>::Ptr( new pcl::PointCloud<pcl::PointXYZRGB>( ));
-            pcl::fromROSMsg( req.cloud, *(data->xtion_cloud_ptr) );
+        data->xtion_rgb_model.fromCameraInfo( req.xtion_rgb_info );
+        cv_bridge::CvImagePtr cv_ptr;
+        try {
+            cv_ptr = cv_bridge::toCvCopy(req.xtion_rgb_image, sensor_msgs::image_encodings::BGR8);
+        }catch (cv_bridge::Exception& e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
         }
+        data->xtion_rgb = cv_ptr->image;
+
+        try {
+            cv_ptr = cv_bridge::toCvCopy(req.xtion_depth_image, sensor_msgs::image_encodings::MONO16);
+        }catch (cv_bridge::Exception& e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+        data->xtion_depth = cv_ptr->image;
+        if ( req.use_pg == true ) {
+            try {
+                cv_ptr = cv_bridge::toCvCopy(req.pg_rgb_image, sensor_msgs::image_encodings::BGR8);
+            }catch (cv_bridge::Exception& e) {
+                ROS_ERROR("cv_bridge exception: %s", e.what());
+                return;
+            }
+            data->pg_rgb = cv_ptr->image;
+            data->pg_rgb_model.fromCameraInfo( req.pg_rgb_info );
+        }
+
 
         {
             boost::mutex::scoped_lock lock(sensor_mutex_);
@@ -303,25 +415,22 @@ void OfflineRecogniser::process() {
 
         {
             SensorData * data = sensor_data_ptr_;
-            if ( data->xtion_rgb_ptr->image.rows != 0 && data->xtion_rgb_ptr->image.cols != 0 &&
-                 data->xtion_depth_ptr->image.rows != 0 && data->xtion_depth_ptr->image.cols != 0 /*&&
-                 data->camera_rgb_ptr->image.rows != 0 && data->camera_rgb_ptr->image.cols != 0 */) {
+            if ( data->xtion_rgb.rows != 0 && data->xtion_rgb.cols != 0 &&
+                 data->xtion_depth.rows != 0 && data->xtion_depth.cols != 0 ) {
                 bin_objs_.items_in_bin.clear();
                 ROS_INFO("Load mask images with index %s", srv_bin_id_.c_str());
 
                 // kernel descriptor recogniser
-                cv::Mat rgb_image = data->xtion_rgb_ptr->image.clone();
-                cv::imshow( "rgb_image", rgb_image );
-                cv::waitKey(3000);
-                cv::Mat depth_image = data->xtion_depth_ptr->image.clone();
-                /*
+                cv::Mat rgb_image = data->xtion_rgb.clone();
+                cv::Mat depth_image = data->xtion_depth.clone();
+
                 switch (op_mode_) {
                 case 1:
                 {
                     // load mask image
-                    cv::Mat xtion_rgb_mask = cv::imread( mask_dir_ + "/mask_xtion_rgb_" + srv_bin_id_ + ".png", CV_LOAD_IMAGE_GRAYSCALE );
-                    cv::Mat empty_image = cv::imread( string(mask_dir_+"/"+srv_bin_id_+"_empty.png"), CV_LOAD_IMAGE_COLOR );
-                    cv::Mat empty_depth_image = cv::imread( string(mask_dir_+"/"+srv_bin_id_+"_depth_empty.png"), CV_LOAD_IMAGE_ANYDEPTH );
+                    cv::Mat xtion_rgb_mask = cv::imread( mask_dir_ + "/xtion_rgb_mask_" + srv_bin_id_ + ".png", CV_LOAD_IMAGE_GRAYSCALE );
+                    cv::Mat empty_image = cv::imread( string(mask_dir_+"/xtion_rgb_empty_"+srv_bin_id_+".png"), CV_LOAD_IMAGE_COLOR );
+                    cv::Mat empty_depth_image = cv::imread( string(mask_dir_+"/xtion_depth_empty_"+srv_bin_id_+".png"), CV_LOAD_IMAGE_ANYDEPTH );
                     kdr_.load_sensor_data( rgb_image, depth_image );
                     kdr_.load_info( empty_image, xtion_rgb_mask, empty_depth_image );
                     kdr_.set_env_configuration( srv_object_name_, srv_bin_contents_ );
@@ -361,9 +470,9 @@ void OfflineRecogniser::process() {
                     break;
                 case 3:
                 {
-                    cv::Mat xtion_rgb_mask = cv::imread( mask_dir_ + "/mask_xtion_rgb_" + srv_bin_id_ + ".png", CV_LOAD_IMAGE_GRAYSCALE );
-                    cv::Mat empty_image = cv::imread( string(mask_dir_+"/"+srv_bin_id_+"_empty.png"), CV_LOAD_IMAGE_COLOR );
-                    cv::Mat empty_depth_image = cv::imread( string(mask_dir_+"/"+srv_bin_id_+"_depth_empty.png"), CV_LOAD_IMAGE_ANYDEPTH );
+                    cv::Mat xtion_rgb_mask = cv::imread( mask_dir_ + "/xtion_rgb_mask_" + srv_bin_id_ + ".png", CV_LOAD_IMAGE_GRAYSCALE );
+                    cv::Mat empty_image = cv::imread( string(mask_dir_+"/xtion_rgb_empty_"+srv_bin_id_+".png"), CV_LOAD_IMAGE_COLOR );
+                    cv::Mat empty_depth_image = cv::imread( string(mask_dir_+"/xtion_depth_empty_"+srv_bin_id_+".png"), CV_LOAD_IMAGE_ANYDEPTH );
 
                     // kernel descriptor recogniser
                     kdr_.load_sensor_data( rgb_image, depth_image );
@@ -394,25 +503,16 @@ void OfflineRecogniser::process() {
                     break;
                 case 4:
                 {
-                    cv::Mat xtion_rgb_mask = cv::imread( mask_dir_ + "/mask_xtion_rgb_" + srv_bin_id_ + ".png", CV_LOAD_IMAGE_GRAYSCALE );
-                    cv::Mat empty_image = cv::imread( string(mask_dir_+"/"+srv_bin_id_+"_empty.png"), CV_LOAD_IMAGE_COLOR );
-                    cv::Mat empty_depth_image = cv::imread( string(mask_dir_+"/"+srv_bin_id_+"_depth_empty.png"), CV_LOAD_IMAGE_ANYDEPTH );
+                    cv::Mat xtion_rgb_mask = cv::imread( mask_dir_ + "/xtion_rgb_mask_" + srv_bin_id_ + ".png", CV_LOAD_IMAGE_GRAYSCALE );
+                    cv::Mat empty_image = cv::imread( string(mask_dir_+"/xtion_rgb_empty_"+srv_bin_id_+".png"), CV_LOAD_IMAGE_COLOR );
+                    cv::Mat empty_depth_image = cv::imread( string(mask_dir_+"/xtion_depth_empty_"+srv_bin_id_+".png"), CV_LOAD_IMAGE_ANYDEPTH );
 
                     // kernel descriptor recogniser
                     kdr_.load_sensor_data( rgb_image, depth_image );
                     kdr_.load_info( empty_image, xtion_rgb_mask, empty_depth_image );
                     kdr_.set_env_configuration( srv_object_name_, srv_bin_contents_ );
-                    vector<pair<string, vector<cv::Point> > > kd_results;
-                    kdr_.process( kd_results );
-
-                    // ebleran recogniser
-                    ebr_.load_sensor_data( rgb_image );
-                    ebr_.set_env_configuration( srv_object_name_, srv_bin_contents_ );
-                    vector<pair<string, vector<cv::Point> > > eb_results;
-                    ebr_.process(eb_results);
-
-                    // generate comb_results from two results
                     vector<pair<string, vector<cv::Point> > > results;
+                    kdr_.process( results );
 
                     bin_objs_.bin_id = srv_bin_id_;
                     for ( int i = 0; i < (int)results.size(); ++ i ) {
@@ -425,22 +525,44 @@ void OfflineRecogniser::process() {
                         }
                         bin_objs_.items_in_bin.push_back( obj );
                     }
+                    vector< pair<string, int> > dup_items = kdr_.get_dup_items();
+                    cv::Mat mask_image = kdr_.get_mask_image();
+                    cv::imshow( "sub_image", mask_image );
+                    cv::waitKey(0);
+                    // remove items that do not have rgb and rgbd methods
+                    vector<string>  pose_items;
+                    vector<int>     pose_items_n;
+                    for ( int ii = 0; ii < (int)dup_items.size(); ++ ii ) {
+                        string item_name = dup_items[ii].first;
+                        if ( methods_.find( item_name ) != methods_.end() ) {
+                            // find the item
+                            pose_items.push_back( dup_items[ii].first );
+                            pose_items_n.push_back( dup_items[ii].second );
+                        }
+                    }
 
-                    for ( int item_i = 0; item_i < (int)srv_bin_contents_.size(); ++  item_i ) {
-                        string item_name = srv_bin_contents_[item_i];
+                    rgb_param_.lmp1.camera_param << data->pg_rgb_model.fx(), data->pg_rgb_model.fy(), data->pg_rgb_model.cx(), data->pg_rgb_model.cy();
+                    rgb_param_.lmp2.camera_param << data->pg_rgb_model.fx(), data->pg_rgb_model.fy(), data->pg_rgb_model.cx(), data->pg_rgb_model.cy();
+                    rgb_param_.pp1.camera_param << data->pg_rgb_model.fx(), data->pg_rgb_model.fy(), data->pg_rgb_model.cx(), data->pg_rgb_model.cy();
+                    rgb_param_.pp2.camera_param << data->pg_rgb_model.fx(), data->pg_rgb_model.fy(), data->pg_rgb_model.cx(), data->pg_rgb_model.cy();
+
+                    rgbd_param_.camera_p << data->pg_rgb_model.fx(), data->pg_rgb_model.fy(), data->pg_rgb_model.cx(), data->pg_rgb_model.cy();
+
+
+
+                    for ( int ii = 0; ii <(int)pose_items.size(); ++ ii ) {
+                        string item_name = pose_items[ii];
                         RecogMethod method = methods_[item_name];
-                        switch( method ) {
-                        case RGB_RECOG:
-                        {
-                            RGBRecogniser rgb_reco( rgb_image );
-                            rgb_reco.set_env_configuration( item_name, srv_bin_contents_ );
-                            rgb_reco.set_camera_params(camera_rgb_model_.fx(), camera_rgb_model_.fy(), camera_rgb_model_.cx(), camera_rgb_model_.cy());
+                        if ( method == RGB_RECOG ) {
+                            RGBRecogniser rgb_reco( rgb_image, mask_image );
+                            rgb_reco.set_bin_contents( pose_items );
                             rgb_reco.load_models( xml_dir_ );
-                            bool reco_success = rgb_reco.run( 15, 10, true );
-                            if ( reco_success == true ) {
-                                list<SP_Object> rgb_objs = rgb_reco.get_objects();
-
-                                foreach( rgb_obj, rgb_objs ){
+                            // rgb recogniser
+                            rgb_reco.set_target_item( item_name );
+                            list<SP_Object> rgb_objs;
+                            bool rgb_reco_done = rgb_reco.run(rgb_objs, rgb_param_, 15, 10, true );
+                            if ( rgb_reco_done == true ) {
+                                foreach( SP_Object rgb_obj, rgb_objs ) {
                                     // trying retrive the item from results
                                     for ( int res_i = 0; res_i < results.size(); ++ res_i ) {
                                         if ( results[res_i].first == rgb_obj->model_->name_ ) {
@@ -461,21 +583,63 @@ void OfflineRecogniser::process() {
                                 }
                             }
                         }
-                            break;
-                        case RGBD_RECOG:
-                        {
+                        else {
+                            // rgbd recogniser
+                            RGBDRecogniser rgbd_reco( rgb_image, mask_image, depth_image, rgbd_param_.camera_p );
+                            rgbd_reco.set_bin_contents( pose_items );
+                            rgbd_reco.load_models( xml_dir_ );
+                            rgbd_reco.set_target_item( item_name );
+                            list<SP_Object> rgbd_objs;
+                            bool rgbd_reco_done = rgbd_reco.run(rgbd_objs, rgbd_param_, true );
+                            if ( rgbd_reco_done == true ) {
+                                foreach( SP_Object rgbd_obj, rgbd_objs ) {
+                                    // trying retrive the item from results
+                                    for ( int res_i = 0; res_i < results.size(); ++ res_i ) {
+                                        if ( results[res_i].first == rgbd_obj->model_->name_ ) {
+                                            apc_msgs::Object &obj = bin_objs_.items_in_bin[res_i];
+                                            obj.use_pose = true;
+                                            obj.pose.position.x = rgbd_obj->pose_.t_.x();
+                                            obj.pose.position.y = rgbd_obj->pose_.t_.y();
+                                            obj.pose.position.z = rgbd_obj->pose_.t_.z();
 
-                        }
-                            break;
+                                            obj.pose.orientation.x = rgbd_obj->pose_.q_.x();
+                                            obj.pose.orientation.y = rgbd_obj->pose_.q_.y();
+                                            obj.pose.orientation.z = rgbd_obj->pose_.q_.z();
+                                            obj.pose.orientation.w = rgbd_obj->pose_.q_.w();
+
+                                            obj.mean_quality = rgbd_obj->score_;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
+
                 }
                     break;
                 default:
                     break;
                 }
 
-                */
+                if ( true ) {
+                    for ( int i = 0; i < (int)bin_objs_.items_in_bin.size(); ++ i) {
+                        apc_msgs::Object obj = bin_objs_.items_in_bin[i];
+                        int minx = 1280, miny = 960;
+                        for ( int j = 0; j < (int)obj.convex_hull_x.size(); ++ j ) {
+                            int d = (j+1)%(int)obj.convex_hull_x.size();
+                            cv::line( rgb_image, cv::Point(obj.convex_hull_x[j], obj.convex_hull_y[j]), cv::Point(obj.convex_hull_x[d], obj.convex_hull_y[d]), cv::Scalar(0,0,255), 2 );
+                            if ( obj.convex_hull_x[j] < minx )
+                                minx = obj.convex_hull_x[j];
+                            if ( obj.convex_hull_y[j] < miny )
+                                miny = obj.convex_hull_y[j];
+                        }
+                        cv::putText( rgb_image, obj.name, cv::Point(minx, miny), CV_FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0, 0, 255), 1 );
+                    }
+                    cv::imshow( "results", rgb_image );
+                    cv::waitKey(1000);
+                }
+
+
 
 
                 if ( srv_mode_ == 2 ) {
@@ -543,58 +707,11 @@ void OfflineRecogniser::load_method_config( string filename ) {
 }
 
 
-void OfflineRecogniser::start_monitor( void ) {
-    // service target object
-    ROS_INFO("start monitor with mode = %s", srv_mode_ == 1? "UTS_Mode": "ZJU_Mode");
-    if ( srv_mode_ == 1 ) {
-        ros::ServiceServer target_srv = nh_->advertiseService( target_srv_name_, &OfflineRecogniser::target_srv_callback, this );
-
-        // subscribe to sensors
-        xtion_rgb_sub_.subscribe(*nh_, xtion_rgb_topic_, 1 );
-        xtion_rgb_info_sub_.subscribe( *nh_, xtion_rgb_info_topic_, 1 );
-        xtion_depth_sub_.subscribe( *nh_, xtion_depth_topic_, 1 );
-        xtion_depth_info_sub_.subscribe( *nh_, xtion_depth_info_topic_, 1 );
-        camera_rgb_sub_.subscribe( *nh_, camera_rgb_topic_, 1 );
-        camera_rgb_info_sub_.subscribe( *nh_, camera_rgb_info_topic_, 1 );
-
-        if ( use_cloud_ == true ) {
-            xtion_cloud_sub_.subscribe( *nh_, xtion_cloud_topic_, 1 );
-            m_sensor_sync_.reset( new message_filters::Synchronizer<sensor_sync_policy>( sensor_sync_policy(100), xtion_rgb_sub_, xtion_rgb_info_sub_, xtion_depth_sub_, xtion_depth_info_sub_, camera_rgb_sub_, camera_rgb_info_sub_, xtion_cloud_sub_) );
-            m_sensor_sync_->registerCallback( boost::bind( &OfflineRecogniser::sensor_callback, this, _1, _2, _3, _4, _5, _6, _7 ) );
-        }
-        else {
-            m_no_cloud_sensor_sync_.reset( new message_filters::Synchronizer<no_cloud_sensor_sync_policy>( no_cloud_sensor_sync_policy(10), xtion_rgb_sub_, xtion_rgb_info_sub_, xtion_depth_sub_, xtion_depth_info_sub_, camera_rgb_sub_, camera_rgb_info_sub_  ) );
-            m_no_cloud_sensor_sync_->registerCallback( boost::bind( &OfflineRecogniser::sensor_callback_no_cloud, this, _1, _2, _3, _4, _5, _6 ) );
-        }
-        process_thread_ = boost::thread(boost::bind(&OfflineRecogniser::process, this));
-
-        ros::MultiThreadedSpinner spinner(6);
-        ros::Rate loop(10);
-        while ( ros::ok() ) {
-            spinner.spin();
-            loop.sleep();
-        }
-    }
-    else if ( srv_mode_ == 2 ) {
-        ros::ServiceServer target_srv = nh_->advertiseService( target_srv_name_, &OfflineRecogniser::target_srv_callback_block, this );
-        process_thread_ = boost::thread( boost::bind(&OfflineRecogniser::process, this) );
-
-        ros::MultiThreadedSpinner spinner(6);
-        ros::Rate loop(10);
-        while ( ros::ok() ) {
-            spinner.spin();
-            loop.sleep();
-        }
-
-    }
-}
-
-
 int main( int argc, char ** argv ) {
     ros::init( argc, argv, "offline_recogniser" );
     ros::NodeHandle nh("~");
     OfflineRecogniser reco( nh );
-    reco.start_monitor();
+//    ros::spin();
     return 0;
 
 }

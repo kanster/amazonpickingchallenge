@@ -39,6 +39,9 @@
 #include <boost/version.hpp>
 #include <boost/filesystem.hpp>
 #include "mat.h"
+#include <sys/time.h>
+
+#include <omp.h>
 
 using namespace std;
 using namespace MatIO;
@@ -500,6 +503,9 @@ static void GKDESDense(MatrixXf& feaArr, MatrixXf& feaMag, MatrixXf& fgrid_y, Ma
 
 // RGBKDESDense function
 static void RGBKDESDense(MatrixXf& feaArr, MatrixXf& feaMag, MatrixXf& fgrid_y, MatrixXf& fgrid_x, IplImage* im, matvarplus_t* kdes_params, int grid_space, int patch_size) {
+
+
+
     const float low_contrast = 0;
 
     // cout << "RGBKDESDense 1\n";
@@ -555,11 +561,21 @@ static void RGBKDESDense(MatrixXf& feaArr, MatrixXf& feaMag, MatrixXf& fgrid_y, 
     imG_mat.transposeInPlace();
     imB_mat.transposeInPlace();
 
-    // cout << "call kernel img3" << endl;
-//    cout << kparam << endl;
+
+
+//    struct timeval t1;
+//    gettimeofday(&t1, NULL);
+//    long int ms1 = t1.tv_sec * 1000 + t1.tv_usec / 1000; //get current timestamp in milliseconds
+
     MatrixXf kparam_g = kparam.block(0,0,1,kparam.cols()-2);
-//    cout << kparam_g << endl;
     MatrixXf im_k = EvalKernelExp_Img3(imR_mat,imG_mat,imB_mat,gpoints,kparam_g);
+
+//    struct timeval t2;
+//    gettimeofday(&t2, NULL);
+//    long int ms2 = t2.tv_sec * 1000 + t2.tv_usec / 1000; //get current timestamp in milliseconds
+//    cout << "Duration: " << ms2 - ms1 << endl;
+
+
     // cout << "RGBKDESDense 3\n";
     VectorXf sub_vector(patch_size);
     for (float i = 0; i < patch_size; i++)
@@ -571,7 +587,22 @@ static void RGBKDESDense(MatrixXf& feaArr, MatrixXf& feaMag, MatrixXf& fgrid_y, 
 
     MatrixXf kparam_s = kparam.block(0,kparam.cols()-2,1,2);
 
+//    gettimeofday(&t1, NULL);
+//    ms1 = t1.tv_sec * 1000 + t1.tv_usec / 1000; //get current timestamp in milliseconds
+
+
     MatrixXf skv = EvalKernelExp_Img2(yy,xx,spoints,kparam_s);
+
+
+//    gettimeofday(&t2, NULL);
+//    ms2 = t2.tv_sec * 1000 + t2.tv_usec / 1000; //get current timestamp in milliseconds
+//    cout << "Duration: " << ms2 - ms1 << endl;
+
+    struct timeval timer1;
+    gettimeofday(&timer1, NULL);
+    long int msa1 = timer1.tv_sec * 1000 + timer1.tv_usec / 1000; //get current timestamp in milliseconds
+//    cout << "1: " << msa1 << endl;
+
     skv.transposeInPlace();
     // cout << "RGBKDESDense 4\n";
     MatrixXf kparam_eigen;
@@ -586,6 +617,12 @@ static void RGBKDESDense(MatrixXf& feaArr, MatrixXf& feaMag, MatrixXf& fgrid_y, 
     MatrixXf im_p( patch_size*patch_size, gsize );
     MatrixXf mwkv;
 
+//    struct timeval timer2;
+//    gettimeofday(&timer2, NULL);
+//    long int msa2 = timer2.tv_sec * 1000 + timer2.tv_usec / 1000; //get current timestamp in milliseconds
+//    cout << "Duration: " << msa2 - msa1 << endl;
+
+
     for(int i=0; i<patches_amt; i++) {
 
         float x_lo = grid_x(i)-1;
@@ -599,16 +636,79 @@ static void RGBKDESDense(MatrixXf& feaArr, MatrixXf& feaMag, MatrixXf& fgrid_y, 
             im_p.block(x*patch_size,0,patch_size,gsize ) = im_k.block( y_lo+(x_lo+x)*img_h,0,patch_size,gsize );
         }
 
+
+
         mwkv = skv_w*im_p;
         mwkv.transposeInPlace();
         mwkv /= skv.cols();
+
+
 
         mwkv.resize( mwkv.rows()*mwkv.cols(),1 );
         mwkvs.col(i) = mwkv.col(0);
 
     }
+//    struct timeval timer3;
+//    gettimeofday(&timer3, NULL);
+//    long int msa3 = timer3.tv_sec * 1000 + timer3.tv_usec / 1000; //get current timestamp in milliseconds
+//    cout << "-duration: " << msa3-msa2 << endl;
+
+
+//    int nonz_kparam = 0, nonz_mwkzs = 0;
+//    for ( int y = 0; y < kparam_eigen.rows(); ++ y )
+//        for ( int x = 0; x < kparam_eigen.cols(); ++ x )
+//            if ( kparam_eigen(y,x) == 0 )
+//                nonz_kparam ++;
+
+//    for ( int y = 0; y < mwkvs.rows(); ++ y )
+//        for ( int x = 0; x < mwkvs.cols(); ++ x )
+//            if ( mwkvs(y,x) == 0 )
+//                nonz_mwkzs ++;
+//    cout << "zero n: " << nonz_kparam << ", " << nonz_mwkzs << endl;
+
+//    struct timeval timer4;
+//    gettimeofday(&timer4, NULL);
+//    long int msa4 = timer4.tv_sec * 1000 + timer4.tv_usec / 1000; //get current timestamp in milliseconds
+
+    if (0) {
+    omp_set_num_threads(4);
+    feaArr.setZero( kparam_eigen.rows(), mwkvs.cols() );
+    #pragma omp parallel for collapse(2)
+    for ( int y = 0; y < feaArr.rows(); ++ y ) {
+        for ( int x = 0; x < feaArr.cols(); ++ x ) {
+            feaArr(y,x) = kparam_eigen.row(y)*mwkvs.col(x);
+//            for ( int k = 0; k < kparam_eigen.cols(); ++ k )
+//                feaArr(y, x) += kparam_eigen(y, k)*mwkvs(k, x);
+        }
+    }
+}
+
+//    for ( int y = 0; y < 5; ++ y ) {
+//        for ( int x = 0; x < 5; ++ x )
+//            cout << feaArr(y, x);
+//        cout << endl;
+//    }
+//    cout << "---------\n";
+
+//    MatrixXf tmp_feaArr = kparam_eigen*mwkvs;
+//    for ( int y = 0; y < 5; ++ y ) {
+//        for ( int x = 0; x < 5; ++ x )
+//            cout << tmp_feaArr(y, x);
+//        cout << endl;
+//    }
+//    cout << "---------\n";
 
     feaArr = kparam_eigen*mwkvs;
+
+//    cout << "4: " << msa4 << endl;
+//    cout << "kparam_eigen: " << kparam_eigen.rows() << ", " << kparam_eigen.cols() << endl;
+//    cout << "mwkvs: " << mwkvs.rows() << ", " << mwkvs.cols() << endl;
+
+//    struct timeval timer5;
+//    gettimeofday(&timer5, NULL);
+//    long int msa5 = timer5.tv_sec * 1000 + timer5.tv_usec / 1000; //get current timestamp in milliseconds
+//    cout << "-- duration: " << msa5-msa4 << endl;
+
     // cout << "RGBKDESDense 5\n";
     //cout << "feaArr" << endl <<  feaArr.block(0,feaArr.cols()-250,10,10) <<endl;
 
@@ -631,6 +731,9 @@ static void RGBKDESDense(MatrixXf& feaArr, MatrixXf& feaMag, MatrixXf& fgrid_y, 
     imR = NULL;
     imG = NULL;
     imB = NULL;
+
+
+
     // cout << "RGBKDESDense 6\n";
     // adding
 }
@@ -889,6 +992,8 @@ static void SpinKDESDense(MatrixXf& feaArr, MatrixXf& fgrid_y, MatrixXf& fgrid_x
 
 
 static void CKSVDEMK(MatrixXf& imfea, const MatrixXf& feaArr, const MatrixXf& feaMag, const MatrixXf& fgrid_y, const MatrixXf& fgrid_x, const int img_h, const int img_w, MatrixXf& words, MatrixXf& G, MatrixXf& pyramid, const float kparam) {
+
+
     MatrixXd Gd = G.cast<double>();
 
     int wordnum = G.rows();
@@ -901,15 +1006,15 @@ static void CKSVDEMK(MatrixXf& imfea, const MatrixXf& feaArr, const MatrixXf& fe
 
     imfea.resize( sgrid*wordnum, 1 );
 
-    //MatrixXf kz = EvalKernelExp( (feaArr), words, kparam );
+
+
     MatrixXf kz = EvalKernelExp_d( (feaArr), words, kparam );
-    // for ( int y = 0; y < 10; ++ y ) {
-    // 	for ( int x = 0; x < 10; ++ x )
-    // 		cout << kz(y,x) << " ";
-    // 	cout << endl;
-    // }
+
+
 
     for(int s=0; s<pyramid.size(); s++) {
+
+
         float wleng = (float)img_w/((pyramid)(s));
         float hleng = (float)img_h/((pyramid)(s));
         MatrixXf xgrid = fgrid_x;
@@ -919,15 +1024,22 @@ static void CKSVDEMK(MatrixXf& imfea, const MatrixXf& feaArr, const MatrixXf& fe
         for(int k=0; k<ygrid.size(); k++)
             ygrid(k)=ceil( (ygrid(k)+1)/hleng);
         MatrixXf allgrid = ( ygrid.array()-1 )*(pyramid)(s) + xgrid.array();
-        // cout << allgrid.rows() << ", " << allgrid.cols() << endl;
-        // for ( int x = 0; x < 10; ++ x )
-        // 	cout << allgrid(x, 0) << " ";
-        // cout << endl;
+
+
+
         int gridsize=allgrid.size();
 
         MatrixXf pimimfea = MatrixXf::Zero( pgrid(s)*wordnum,1 );
 
+
+
+//        struct timeval ta1;
+//        gettimeofday(&ta1, NULL);
+//        long int msa1 = ta1.tv_sec * 1000 + ta1.tv_usec / 1000; //get current timestamp in milliseconds
         for(int t=1; t<=pgrid(s); t++) {
+
+
+
             MatrixXf kzind( kz.rows(), kz.cols() );
             int nkzind=0;
             for(int i=0; i<gridsize; i++)
@@ -947,6 +1059,8 @@ static void CKSVDEMK(MatrixXf& imfea, const MatrixXf& feaArr, const MatrixXf& fe
                 vec.push_back( mypair(min,myindex(i,minCol)) );
             }
 
+
+
             if ( vec.empty() ) continue;
             sort( vec.begin(), vec.end(), comparator );
 
@@ -960,40 +1074,47 @@ static void CKSVDEMK(MatrixXf& imfea, const MatrixXf& feaArr, const MatrixXf& fe
                 }
             }
 
+
+
             for(set<int>::iterator it=indgrid.begin(); it!=indgrid.end(); it++) {
                 mkzind.array() += (kzind.row( *it )).cast<double>().array();
             }
             mkzind.array() /= indgrid.size();
 
-            // getchar();
-            // cout << "mkzind: " << mkzind.rows() << ", " << mkzind.cols() << endl;
-            // for ( int x = 0; x < 1000; ++ x )
-            // 	cout << mkzind(0, x) << " ";
-            // getchar();
-            // cout << "\nG:\n";
-            // ofstream oG("newG.txt");
-            // for ( int y = 0; y < Gd.rows(); y+= 1 ) {
-            // 	for ( int x = 0; x < Gd.cols(); x+= 1 )
-            // 		oG << Gd(y,x) << " ";
-            // 	oG << "\n";
-            // }
-            // oG.close();
-
-
+//            struct timeval t1;
+//            gettimeofday(&t1, NULL);
+//            long int ms1 = t1.tv_sec * 1000 + t1.tv_usec / 1000; //get current timestamp in milliseconds
+//            cout << "1: " << ms1 << endl;
             // pimimfea.block( (t-1)*wordnum, 0, wordnum, 1 ) = (G)*( (mkzind.cast<float>()).transpose());
+            if (0) {
+            omp_set_num_threads(4);
+            #pragma omp parallel for collapse(2)
+            for ( int i = 0; i < wordnum; ++ i ) {
+                for ( int j = 0; j < Gd.cols(); ++ j )
+                    pimimfea(i+(t-1)*wordnum, 0) += (float)(Gd(i, j)*mkzind(0, j));
+            }
+            }
+
             pimimfea.block( (t-1)*wordnum, 0, wordnum, 1 ) = ( Gd*(mkzind.transpose()) ).cast<float>();
-            // MatrixXd tmp = ( Gd*(mkzind.transpose()) );
-            // cout << tmp.rows() << ", " << tmp.cols() << endl;
-            // for ( int y = 0; y < tmp.rows(); ++ y )
-            // 	cout << tmp(y,0) << " ";// printf("%.5f ", tmp(y,0));
-            // getchar();
+
+//            struct timeval t2;
+//            gettimeofday(&t2, NULL);
+//            long int ms2 = t2.tv_sec * 1000 + t2.tv_usec / 1000; //get current timestamp in milliseconds
+//            cout << "2: " << ms2 << endl;
         }
+//        struct timeval ta2;
+//        gettimeofday(&ta2, NULL);
+//        long int msa2 = ta2.tv_sec * 1000 + ta2.tv_usec / 1000; //get current timestamp in milliseconds
+//        cout << "duration: " << msa2-msa1 << endl;
+//        cout << "pgrid s: " << pgrid(s) << endl;
+
+//        getchar();
+
 
         imfea.block( pgrid.block(0,0,1,s).sum() * wordnum, 0, pgrid(s)*wordnum, 1 ) = pimimfea.array() * weights(s);
-
     }
 
-    //cout << imfea.block(000,0,10,1) << endl;
+
     return;
 }
 

@@ -10,7 +10,14 @@ template<typename T> void normaliser( vector<T> & vec ) {
         vec[i] /= norm;
 }
 
-// constructor with parameterisation
+//! constructor with parameterisation
+FeatureMatcher::FeatureMatcher(MatcherParam mp) {
+    quality_ = (float)mp.quality;
+    ratio_ = (float)mp.ratio;
+    descriptor_size_ = mp.descrip_size;
+    descriptor_type_ = mp.type;
+}
+
 FeatureMatcher::FeatureMatcher(float quality, float ratio, int descriptor_size, string descriptor_type) {
     quality_    = quality;
     ratio_      = ratio;

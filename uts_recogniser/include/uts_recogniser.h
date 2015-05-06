@@ -69,30 +69,21 @@ private:
     typedef enum{RGBD_RECOG, RGB_RECOG} RecogMethod;
 
     // sync policy of xtion and camera
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::PointCloud2> sensor_sync_policy;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> sensor_sync_policy;
 
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo> no_cloud_sensor_sync_policy;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image> no_pg_sensor_sync_policy;
 
     // sensor data from xtion and camera
     struct SensorData {
-        cv_bridge::CvImagePtr xtion_rgb_ptr;
-        cv_bridge::CvImagePtr xtion_depth_ptr;
-        // PointType is set to be PointXYZRGB in utils.h
-        typename pcl::PointCloud<PointType>::Ptr xtion_cloud_ptr;
+        cv::Mat xtion_rgb;
+        cv::Mat xtion_depth;
 
-        // data from rgb image
-        cv_bridge::CvImagePtr camera_rgb_ptr;
+        image_geometry::PinholeCameraModel xtion_rgb_model;
 
-        // xtion availability
-        bool use_cloud;
+        bool use_pg;
+        cv::Mat pg_rgb;
+        image_geometry::PinholeCameraModel pg_rgb_model;
     };
-
-    // methods for all working order item
-    struct Item{
-        string object_name;
-        string method;
-    };
-
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -101,24 +92,19 @@ public:
     ~OfflineRecogniser();
 
     // main processing function
-    void start_monitor( void );
+//    void start_monitor( void );
 
     // sensor callback
     void sensor_callback( const sensor_msgs::ImageConstPtr & rgb_image_msg,
                           const sensor_msgs::CameraInfoConstPtr & rgb_image_info,
                           const sensor_msgs::ImageConstPtr & depth_image_msg,
-                          const sensor_msgs::CameraInfoConstPtr & depth_image_info,
                           const sensor_msgs::ImageConstPtr & camera_image_msg,
-                          const sensor_msgs::CameraInfoConstPtr & camera_image_info,
-                          const sensor_msgs::PointCloud2ConstPtr & cloud_ptr_msg );
+                          const sensor_msgs::CameraInfoConstPtr & camera_image_info);
 
     // sensor callback without pcd file
-    void sensor_callback_no_cloud(const sensor_msgs::ImageConstPtr &rgb_image_msg,
+    void sensor_callback_no_pg(const sensor_msgs::ImageConstPtr &rgb_image_msg,
                          const sensor_msgs::CameraInfoConstPtr &rgb_image_info,
-                         const sensor_msgs::ImageConstPtr &depth_image_msg,
-                         const sensor_msgs::CameraInfoConstPtr &depth_image_info,
-                         const sensor_msgs::ImageConstPtr &camera_image_msg,
-                         const sensor_msgs::CameraInfoConstPtr &camera_image_info);
+                         const sensor_msgs::ImageConstPtr &depth_image_msg );
 
     // target service callback
     bool target_srv_callback( apc_msgs::TargetRequest::Request & req,
@@ -141,12 +127,7 @@ private:
 private:
     //! sync policy, with and without cloud
     boost::shared_ptr<message_filters::Synchronizer<sensor_sync_policy> > m_sensor_sync_;
-    boost::shared_ptr<message_filters::Synchronizer<no_cloud_sensor_sync_policy> > m_no_cloud_sensor_sync_;
-
-    //! camera info for 3 images
-    image_geometry::PinholeCameraModel xtion_rgb_model_;
-    image_geometry::PinholeCameraModel xtion_depth_model_;
-    image_geometry::PinholeCameraModel camera_rgb_model_;
+    boost::shared_ptr<message_filters::Synchronizer<no_pg_sensor_sync_policy> > m_no_pg_sensor_sync_;
 
     //! recognition result publish
     ros::Publisher recog_pub_;
@@ -158,19 +139,15 @@ private:
     string xtion_rgb_topic_;
     string xtion_rgb_info_topic_;
     string xtion_depth_topic_;
-    string xtion_depth_info_topic_;
-    string xtion_cloud_topic_;
-    string camera_rgb_topic_;
-    string camera_rgb_info_topic_;
+    string pg_rgb_topic_;
+    string pg_rgb_info_topic_;
 
     //! sensor info subscriber
     message_filters::Subscriber<sensor_msgs::Image>         xtion_rgb_sub_;
     message_filters::Subscriber<sensor_msgs::CameraInfo>    xtion_rgb_info_sub_;
     message_filters::Subscriber<sensor_msgs::Image>         xtion_depth_sub_;
-    message_filters::Subscriber<sensor_msgs::CameraInfo>    xtion_depth_info_sub_;
-    message_filters::Subscriber<sensor_msgs::PointCloud2>   xtion_cloud_sub_;
-    message_filters::Subscriber<sensor_msgs::Image>         camera_rgb_sub_;
-    message_filters::Subscriber<sensor_msgs::CameraInfo>    camera_rgb_info_sub_;
+    message_filters::Subscriber<sensor_msgs::Image>         pg_rgb_sub_;
+    message_filters::Subscriber<sensor_msgs::CameraInfo>    pg_rgb_info_sub_;
 
     //! buffer data, pointer and mutex
     SensorData sensor_data_;
@@ -202,8 +179,6 @@ private:
     string object_srv_name_;
     string target_srv_name_;
 
-    //! depth image or point cloud
-    bool use_cloud_;
     //! mask image directory
     string mask_dir_;
     //! file path for method, rgb or rgbd
@@ -229,6 +204,14 @@ private:
     string kd_dir_;
     KDRecogniser kdr_;
 
+    //! RGB recogniser param
+    RGBParam rgb_param_;
+
+    //! RGBD recogniser param
+    RGBDParam rgbd_param_;
+
+    //! use pg
+    bool use_pg_;
 
     //! main process thread
     boost::thread process_thread_;

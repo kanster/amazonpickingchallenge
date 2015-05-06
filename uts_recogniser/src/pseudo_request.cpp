@@ -108,11 +108,6 @@ private:
     //! use point cloud or not
     bool use_pointcloud_;
 
-    //! recognition completed mutex and condition
-    bool recog_completed_;
-    boost::mutex recog_completed_mutex_;
-    boost::condition_variable recog_completed_cond_;
-
     // json file
     JSON json_;
     std::string json_filename_;
@@ -130,14 +125,20 @@ private:
 
     //! callback function for online mode
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo> without_pg_policy;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::PointCloud2> cloud_without_pg_policy;
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::Image, sensor_msgs::CameraInfo> with_pg_policy;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::PointCloud2, sensor_msgs::Image, sensor_msgs::CameraInfo> cloud_with_pg_policy;
     boost::shared_ptr<message_filters::Synchronizer<without_pg_policy> > without_pg_sensor_sync_;
+    boost::shared_ptr<message_filters::Synchronizer<cloud_without_pg_policy> > cloud_without_pg_sensor_sync_;
     boost::shared_ptr<message_filters::Synchronizer<with_pg_policy> > with_pg_sensor_sync_;
+    boost::shared_ptr<message_filters::Synchronizer<cloud_with_pg_policy> > cloud_with_pg_sensor_sync_;
+
 
     string ori_xtion_rgb_topic_;
     string ori_xtion_rgb_info_topic_;
     string ori_xtion_depth_topic_;
     string ori_xtion_depth_info_topic_;
+    string ori_xtion_cloud_topic_;
     string ori_pg_rgb_topic_;
     string ori_pg_rgb_info_topic_;
 
@@ -147,20 +148,24 @@ private:
     message_filters::Subscriber<sensor_msgs::CameraInfo>    ori_xtion_depth_info_sub_;
     message_filters::Subscriber<sensor_msgs::Image>         ori_pg_rgb_sub_;
     message_filters::Subscriber<sensor_msgs::CameraInfo>    ori_pg_rgb_info_sub_;
+    message_filters::Subscriber<sensor_msgs::PointCloud2>   ori_xtion_cloud_sub_;
 
 
 
     //! sensor info data
     struct SensorData{
-//        cv::Mat xtion_rgb;
-        cv_bridge::CvImagePtr xtion_rgb;
-        cv_bridge::CvImagePtr xtion_depth;
+        cv::Mat xtion_rgb;
+//        cv_bridge::CvImage xtion_rgb;
+        cv::Mat xtion_depth;
         image_geometry::PinholeCameraModel xtion_rgb_model;
         image_geometry::PinholeCameraModel xtion_depth_model;
         bool use_pg;
-        cv_bridge::CvImagePtr  pg_rgb;
+        cv::Mat pg_rgb;
         image_geometry::PinholeCameraModel pg_rgb_model;
     };
+    pcl::PointCloud<pcl::PointXYZRGB> xtion_cloud_;
+
+
     SensorData sensor_data_;
     SensorData * sensor_data_ptr_;
     bool sensor_empty_;
@@ -169,132 +174,194 @@ private:
     //! image for disp
     cv::Mat disp_image_;
 
+
 private:
-//    void without_pg_callback( const sensor_msgs::ImageConstPtr & xtion_rgb_msg,
-//                              const sensor_msgs::CameraInfoConstPtr & xtion_rgb_info_msg,
-//                              const sensor_msgs::ImageConstPtr & xtion_depth_msg ) {
-//        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud( new pcl::PointCloud<pcl::PointXYZRGB>() );
-//        pcl::fromROSMsg( *cloud_msg, *cloud_ );
+    void cloud_without_pg_callback(   const sensor_msgs::ImageConstPtr & xtion_rgb_msg,
+                                      const sensor_msgs::CameraInfoConstPtr & xtion_rgb_info_msg,
+                                      const sensor_msgs::PointCloud2ConstPtr & cloud_msg ) {
 
-//        ROS_INFO_ONCE( "Without point grey callback" );
-//        SensorData * data = &sensor_data_;
-//        // assign value for sensor data
-//        data->xtion_rgb = cv_bridge::toCvCopy(xtion_rgb_msg, sensor_msgs::image_encodings::BGR8);
-//        data->xtion_rgb_model.fromCameraInfo( xtion_rgb_info_msg );
-//        cv::Mat cloud_depth( cloud_->height, cloud_->width, CV_16UC1, cv::Scalar(0) );
-//        cv::Mat disp_depth( cloud_->height, cloud_->width, CV_32FC1, cv::Scalar(0) );
-
-//        for ( int y = 0; y < (int)cloud->height; ++ y ) {
-//            for ( int x = 0; x < (int)cloud->width; ++ x ) {
-//                pcl::PointXYZRGB & pt = cloud->points[y*cloud->width+x];
-//                if ( !pcl_isinf(pt.x) && !pcl_isnan(pt.x) &&
-//                     !pcl_isinf(pt.y) && !pcl_isnan(pt.y) &&
-//                     !pcl_isinf(pt.z) && !pcl_isnan(pt.z) ) {
-//                    cloud_depth_.at<unsigned short>(y,x) = static_cast<unsigned short>(pt.z*1000.0);
-//                    disp_depth_.at<float>(y,x) = static_cast<float>(pt.z);
-//                }
-//            }
-//        }
-
-//    }
-
-
-    void without_pg_callback( const sensor_msgs::ImageConstPtr & xtion_rgb_msg,
-                              const sensor_msgs::CameraInfoConstPtr & xtion_rgb_info_msg,
-                              const sensor_msgs::ImageConstPtr & xtion_depth_msg,
-                              const sensor_msgs::CameraInfoConstPtr & xtion_depth_info_msg ) {
         ROS_INFO_ONCE( "Without point grey callback" );
-        SensorData * data = &sensor_data_;
-        data->xtion_rgb = cv_bridge::toCvCopy(xtion_rgb_msg, sensor_msgs::image_encodings::BGR8);
-        data->xtion_depth = cv_bridge::toCvCopy( xtion_depth_msg, sensor_msgs::image_encodings::TYPE_32FC1 );
-        data->xtion_rgb_model.fromCameraInfo( xtion_rgb_info_msg );
-        data->xtion_depth_model.fromCameraInfo( xtion_depth_info_msg );
-        // set sensor data info
-        data->use_pg = false;
-        disp_image_ = data->xtion_rgb->image.clone();// cv_ptr->image.clone();
-        cv::putText( disp_image_, "Press <s> to publish", cv::Point(20, 30), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 1 );
-        cv::putText( disp_image_, "Put items: ", cv::Point(20, 50), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 1 );
-        for ( int i = 0; i < (int)bin_contents_[work_order_[count_].first].size(); ++ i ) {
-            cv::putText( disp_image_, bin_contents_[work_order_[count_].first][i], cv::Point(20, 70+i*20), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 1 );
-        }
-        cv::imshow( "rgb_image", disp_image_ );
-        char k = cv::waitKey(5);
-        if ( k == 's' ) {
-            {
-                boost::mutex::scoped_lock lock( sensor_mutex_ );
-                sensor_empty_ = false;
-            }
-            sensor_cond_.notify_one();
+        bool tmp_mask;
 
-            {
-                boost::mutex::scoped_lock lock( recog_completed_mutex_ );
-                recog_completed_ = false;
-            }
-        }
         {
-            boost::mutex::scoped_lock lock( recog_completed_mutex_ );
-            while ( !recog_completed_ )
-                recog_completed_cond_.wait( lock );
+            boost::mutex::scoped_lock lock( sensor_mutex_ );
+            tmp_mask = sensor_empty_;
         }
-    }
 
+        if(tmp_mask){
+            pcl::fromROSMsg( *cloud_msg, xtion_cloud_ );
 
-    void with_pg_callback( const sensor_msgs::ImageConstPtr & xtion_rgb_msg,
-                           const sensor_msgs::CameraInfoConstPtr & xtion_rgb_info_msg,
-                           const sensor_msgs::ImageConstPtr & xtion_depth_msg,
-                           const sensor_msgs::CameraInfoConstPtr & xtion_depth_info_msg,
-                           const sensor_msgs::ImageConstPtr & pg_rgb_msg,
-                           const sensor_msgs::CameraInfoConstPtr & pg_rgb_info_msgs) {
-        ROS_INFO( "With point grey callback" );
-        SensorData * data = sensor_data_ptr_;
-        data->xtion_rgb   = cv_bridge::toCvCopy( xtion_rgb_msg, sensor_msgs::image_encodings::BGR8 );
-        data->xtion_depth = cv_bridge::toCvCopy( xtion_depth_msg, sensor_msgs::image_encodings::TYPE_32FC1 );
-        data->pg_rgb      = cv_bridge::toCvCopy( pg_rgb_msg, sensor_msgs::image_encodings::BGR8 );
-        data->xtion_rgb_model.fromCameraInfo( xtion_rgb_info_msg );
-        data->xtion_depth_model.fromCameraInfo( xtion_depth_info_msg );
-        data->pg_rgb_model.fromCameraInfo(pg_rgb_info_msgs);
-        data->use_pg = true;
-        disp_image_ = data->xtion_rgb->image.clone();
-        cv::putText( disp_image_, "Press <s> to publish", cv::Point(10, 10), CV_FONT_HERSHEY_SIMPLEX, 0.2, cv::Scalar(255, 0, 0), 0.1 );
-        cv::imshow( "rgb_image", disp_image_ );
-        char k = cv::waitKey(5);
-        if ( k == 's' ) {
-            {
-                boost::mutex::scoped_lock lock( sensor_mutex_ );
-                sensor_empty_ = false;
+            cv_bridge::CvImagePtr cv_ptr;
+            try {
+                cv_ptr = cv_bridge::toCvCopy(xtion_rgb_msg, sensor_msgs::image_encodings::BGR8);
+            }catch (cv_bridge::Exception& e) {
+                ROS_ERROR("cv_bridge exception: %s", e.what());
+                return;
             }
-            sensor_cond_.notify_one();
+            sensor_data_.xtion_rgb = cv_ptr->image;
+
+
+            // assign value for sensor data
+            sensor_data_.xtion_rgb_model.fromCameraInfo( xtion_rgb_info_msg );
+            for ( int y = 0; y < (int)xtion_cloud_.height; ++ y ) {
+                for ( int x = 0; x < (int)xtion_cloud_.width; ++ x ) {
+                    pcl::PointXYZRGB & pt = xtion_cloud_.points[y*xtion_cloud_.width+x];
+                    sensor_data_.xtion_depth.at<unsigned short>(y,x) = static_cast<unsigned short>(0);
+                    if ( !pcl_isinf(pt.x) && !pcl_isnan(pt.x) &&
+                         !pcl_isinf(pt.y) && !pcl_isnan(pt.y) &&
+                         !pcl_isinf(pt.z) && !pcl_isnan(pt.z) ) {
+                        sensor_data_.xtion_depth.at<unsigned short>(y,x) = static_cast<unsigned short>(pt.z*1000.0);
+                    }
+                }
+            }
+            sensor_data_.use_pg = false;
+
+            //disp
+            disp_image_ = sensor_data_.xtion_rgb.clone();// cv_ptr->image.clone();
+
+            cv::putText( disp_image_, "Press <s> to publish", cv::Point(20, 30), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1 );
+            cv::putText( disp_image_, "Put items: ", cv::Point(20, 50), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1 );
+            for ( int i = 0; i < (int)bin_contents_[work_order_[count_].first].size(); ++ i ) {
+                cv::putText( disp_image_, bin_contents_[work_order_[count_].first][i], cv::Point(20, 70+i*20), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1 );
+            }
+            cv::imshow( "xtion_rgb_image", disp_image_ );
+            char k = cv::waitKey(5);
+            if ( k == 's' ) {
+                {
+                    boost::mutex::scoped_lock lock( sensor_mutex_ );
+                    sensor_empty_ = false;
+                }
+                sensor_cond_.notify_one();
+                ori_xtion_rgb_sub_.unsubscribe();
+                ori_xtion_rgb_info_sub_.unsubscribe();
+                ori_xtion_cloud_sub_.unsubscribe();
+            }
         }
     }
+
+
+    void cloud_with_pg_callback( const sensor_msgs::ImageConstPtr & xtion_rgb_msg,
+                                 const sensor_msgs::CameraInfoConstPtr & xtion_rgb_info_msg,
+                                 const sensor_msgs::PointCloud2ConstPtr & cloud_msg,
+                                 const sensor_msgs::ImageConstPtr & pg_rgb_msg,
+                                 const sensor_msgs::CameraInfoConstPtr & pg_rgb_info_msg ) {
+        bool tmp_mask;
+        {
+            boost::mutex::scoped_lock lock( sensor_mutex_ );
+            tmp_mask = sensor_empty_;
+        }
+        if(tmp_mask){
+            pcl::fromROSMsg( *cloud_msg, xtion_cloud_ );
+
+            cv_bridge::CvImagePtr cv_ptr;
+            try {
+                cv_ptr = cv_bridge::toCvCopy(xtion_rgb_msg, sensor_msgs::image_encodings::BGR8);
+            }catch (cv_bridge::Exception& e) {
+                ROS_ERROR("cv_bridge exception: %s", e.what());
+                return;
+            }
+            sensor_data_.xtion_rgb = cv_ptr->image;
+
+            cv_bridge::CvImagePtr pg_ptr;
+            try {
+                pg_ptr = cv_bridge::toCvCopy( pg_rgb_msg, sensor_msgs::image_encodings::BGR8 );
+            } catch ( cv_bridge::Exception & e ) {
+                ROS_ERROR( "cv_bridge exceptions: %s", e.what() );
+                return;
+            }
+            sensor_data_.pg_rgb = pg_ptr->image;
+            sensor_data_.use_pg = true;
+
+            // assign value for sensor data
+            sensor_data_.xtion_rgb_model.fromCameraInfo( xtion_rgb_info_msg );
+            sensor_data_.pg_rgb_model.fromCameraInfo( pg_rgb_info_msg );
+
+
+            for ( int y = 0; y < (int)xtion_cloud_.height; ++ y ) {
+                for ( int x = 0; x < (int)xtion_cloud_.width; ++ x ) {
+                    pcl::PointXYZRGB & pt = xtion_cloud_.points[y*xtion_cloud_.width+x];
+                    sensor_data_.xtion_depth.at<unsigned short>(y,x) = static_cast<unsigned short>(0);
+                    if ( !pcl_isinf(pt.x) && !pcl_isnan(pt.x) &&
+                         !pcl_isinf(pt.y) && !pcl_isnan(pt.y) &&
+                         !pcl_isinf(pt.z) && !pcl_isnan(pt.z) ) {
+                        sensor_data_.xtion_depth.at<unsigned short>(y,x) = static_cast<unsigned short>(pt.z*1000.0);
+                    }
+                }
+            }
+
+            //disp
+            disp_image_ = sensor_data_.xtion_rgb.clone();// cv_ptr->image.clone();
+
+            cv::putText( disp_image_, "Press <s> to publish", cv::Point(20, 30), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1 );
+            cv::putText( disp_image_, "Put items: ", cv::Point(20, 50), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1 );
+            for ( int i = 0; i < (int)bin_contents_[work_order_[count_].first].size(); ++ i ) {
+                cv::putText( disp_image_, bin_contents_[work_order_[count_].first][i], cv::Point(20, 70+i*20), CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1 );
+            }
+            cv::imshow( "xtion_rgb_image", disp_image_ );
+            cv::imshow( "pg_rgb_image", sensor_data_.pg_rgb );
+            char k = cv::waitKey(5);
+            if ( k == 's' ) {
+                {
+                    boost::mutex::scoped_lock lock( sensor_mutex_ );
+                    sensor_empty_ = false;
+                }
+                sensor_cond_.notify_one();
+
+                ori_xtion_rgb_sub_.unsubscribe();
+                ori_xtion_rgb_info_sub_.unsubscribe();
+                ori_xtion_cloud_sub_.unsubscribe();
+                ori_pg_rgb_sub_.unsubscribe();
+                ori_pg_rgb_info_sub_.unsubscribe();
+            }
+        }
+
+
+    }
+
+
 
     void cam_model_to_msg( sensor_msgs::CameraInfo & msg, image_geometry::PinholeCameraModel & model ) {
         msg.binning_x = model.binningX();
         msg.binning_y = model.binningY();
         msg.D = model.distortionCoeffs();
-        msg.P[0] = cv::Mat(model.projectionMatrix()).at<double>(0,0);
-        msg.P[1] = cv::Mat(model.projectionMatrix()).at<double>(0,1);
-        msg.P[2] = cv::Mat(model.projectionMatrix()).at<double>(0,2);
-        msg.P[3] = cv::Mat(model.projectionMatrix()).at<double>(0,3);
-        msg.P[4] = cv::Mat(model.projectionMatrix()).at<double>(1,0);
-        msg.P[5] = cv::Mat(model.projectionMatrix()).at<double>(1,1);
-        msg.P[6] = cv::Mat(model.projectionMatrix()).at<double>(1,2);
-        msg.P[7] = cv::Mat(model.projectionMatrix()).at<double>(1,3);
-        msg.P[8] = cv::Mat(model.projectionMatrix()).at<double>(2,0);
-        msg.P[9] = cv::Mat(model.projectionMatrix()).at<double>(2,1);
-        msg.P[10] = cv::Mat(model.projectionMatrix()).at<double>(2,2);
-        msg.P[11] = cv::Mat(model.projectionMatrix()).at<double>(2,3);
+        msg.P[0] = model.projectionMatrix().at<double>(0,0);
+        msg.P[1] = model.projectionMatrix().at<double>(0,1);
+        msg.P[2] = model.projectionMatrix().at<double>(0,2);
+        msg.P[3] = model.projectionMatrix().at<double>(0,3);
+        msg.P[4] = model.projectionMatrix().at<double>(1,0);
+        msg.P[5] = model.projectionMatrix().at<double>(1,1);
+        msg.P[6] = model.projectionMatrix().at<double>(1,2);
+        msg.P[7] = model.projectionMatrix().at<double>(1,3);
+        msg.P[8] = model.projectionMatrix().at<double>(2,0);
+        msg.P[9] = model.projectionMatrix().at<double>(2,1);
+        msg.P[10] = model.projectionMatrix().at<double>(2,2);
+        msg.P[11] = model.projectionMatrix().at<double>(2,3);
     }
+
 
 public:
     DataPublisher( ros::NodeHandle & nh )
-        : sensor_empty_(true)
-        , recog_completed_(true){
+        : sensor_empty_(true){
         nh_ = & nh;
+        count_ = 0;
+
+        // set size of cloud
+        xtion_cloud_.width  = 640;
+        xtion_cloud_.height = 480;
+        xtion_cloud_.is_dense = true;
+        xtion_cloud_.points.resize( 640*480 );
+
+        // alloc sensor data
+        sensor_data_.xtion_rgb = cv::Mat( 480, 640, CV_8UC3 );
+        sensor_data_.xtion_depth = cv::Mat( 480, 640, CV_16UC1 );
 
         nh_->param<std::string>("json", json_filename_, "/tmp/apc/amazon.json");
         nh_->param<bool>("use_cloud", use_pointcloud_, false);
         nh_->param<bool>("online", online_mode_, true);
         nh_->param<bool>("use_pg", use_pg_, false);
+
+//        if ( use_pg_ == true )
+//            sensor_data_.pg_rgb = cv::Mat( 960, 1280, CV_8UC1 );
 
         ROS_INFO_ONCE( "json file from %s", json_filename_.c_str());
         json_.from_file( json_filename_ );
@@ -303,18 +370,22 @@ public:
 
         nh_->param<int>("srv_mode", srv_mode_, 1);
 
+        cv::namedWindow( "xtion_rgb_image" ); cv::moveWindow( "xtion_rgb_image", 0, 0 );
+
         if ( online_mode_ == true ) {
             ROS_INFO( "Use online mode" );
             // named window for call back visualization
-            cv::namedWindow( "rgb_image" );
             nh_->param<std::string>("ori_xtion_rgb_image", ori_xtion_rgb_topic_, "/camera/rgb/image_color");
             nh_->param<std::string>("ori_xtion_rgb_info", ori_xtion_rgb_info_topic_, "/camera/rgb/camera_info");
-            nh_->param<std::string>("ori_xtion_depth_image", ori_xtion_depth_topic_, "/camera/depth/image_raw");
-            nh_->param<std::string>("ori_xtion_depth_info", ori_xtion_depth_info_topic_, "/camera/depth/camera_info");
+            nh_->param<std::string>("ori_xtion_cloud", ori_xtion_cloud_topic_, "/camera/depth_registered/points");
             ROS_INFO( "Subscribe from %s", ori_xtion_rgb_topic_.c_str() );
             ROS_INFO( "Subscribe from %s", ori_xtion_rgb_info_topic_.c_str() );
-            ROS_INFO( "Subscribe from %s", ori_xtion_depth_topic_.c_str() );
-            ROS_INFO( "Subscribe from %s", ori_xtion_depth_info_topic_.c_str() );
+            ROS_INFO( "Subscribe from %s", ori_xtion_cloud_topic_.c_str() );
+
+//            nh_->param<std::string>("ori_xtion_depth_image", ori_xtion_depth_topic_, "/camera/depth/image_raw");
+//            nh_->param<std::string>("ori_xtion_depth_info", ori_xtion_depth_info_topic_, "/camera/depth/camera_info");
+//            ROS_INFO( "Subscribe from %s", ori_xtion_depth_topic_.c_str() );
+//            ROS_INFO( "Subscribe from %s", ori_xtion_depth_info_topic_.c_str() );
 
 
             // use point grey or not
@@ -323,13 +394,14 @@ public:
                 // subscribe to specific topics
                 ori_xtion_rgb_sub_.subscribe( *nh_, ori_xtion_rgb_topic_, 1);
                 ori_xtion_rgb_info_sub_.subscribe( *nh_, ori_xtion_rgb_info_topic_, 1);
-                ori_xtion_depth_sub_.subscribe( *nh_, ori_xtion_depth_topic_, 1);
-                ori_xtion_depth_info_sub_.subscribe( *nh_, ori_xtion_depth_info_topic_, 1);
-                without_pg_sensor_sync_.reset( new message_filters::Synchronizer<without_pg_policy>(without_pg_policy(10), ori_xtion_rgb_sub_, ori_xtion_rgb_info_sub_, ori_xtion_depth_sub_, ori_xtion_depth_info_sub_) );
-                without_pg_sensor_sync_->registerCallback( boost::bind( &DataPublisher::without_pg_callback, this, _1, _2, _3, _4 ) );
+                ori_xtion_cloud_sub_.subscribe( *nh_, ori_xtion_cloud_topic_, 1 );
+                cloud_without_pg_sensor_sync_.reset( new message_filters::Synchronizer<cloud_without_pg_policy>( cloud_without_pg_policy(10), ori_xtion_rgb_sub_, ori_xtion_rgb_info_sub_, ori_xtion_cloud_sub_ ) );
+                cloud_without_pg_sensor_sync_->registerCallback( boost::bind( &DataPublisher::cloud_without_pg_callback, this, _1, _2, _3 ) );
 
             }
             else if ( use_pg_ == true ) {
+                cv::namedWindow( "pg_rgb_image" ); cv::moveWindow( "pg_rgb_image", 640, 0 );
+
                 ROS_INFO( "Do use point grey high resolution camera" );
                 nh_->param<std::string>("ori_pg_rgb_image", ori_pg_rgb_topic_, "/rgb_image");
                 nh_->param<std::string>("ori_pg_rgb_info", ori_pg_rgb_info_topic_, "/camera_info");
@@ -339,12 +411,11 @@ public:
                 // subscribe to specific topics
                 ori_xtion_rgb_sub_.subscribe( *nh_, ori_xtion_rgb_topic_, 1);
                 ori_xtion_rgb_info_sub_.subscribe( *nh_, ori_xtion_rgb_info_topic_, 1);
-                ori_xtion_depth_sub_.subscribe( *nh_, ori_xtion_depth_topic_, 1);
-                ori_xtion_depth_info_sub_.subscribe( *nh_, ori_xtion_depth_info_topic_, 1);
+                ori_xtion_cloud_sub_.subscribe( *nh_, ori_xtion_cloud_topic_, 1 );
                 ori_pg_rgb_sub_.subscribe( *nh_, ori_pg_rgb_topic_, 1);
                 ori_pg_rgb_info_sub_.subscribe( *nh_, ori_pg_rgb_info_topic_, 1);
-                with_pg_sensor_sync_.reset( new message_filters::Synchronizer<with_pg_policy>(with_pg_policy(10), ori_xtion_rgb_sub_, ori_xtion_rgb_info_sub_, ori_xtion_depth_sub_, ori_xtion_depth_info_sub_, ori_pg_rgb_sub_, ori_pg_rgb_info_sub_) );
-                with_pg_sensor_sync_->registerCallback( boost::bind( &DataPublisher::with_pg_callback, this, _1, _2, _3, _4, _5, _6 ) );
+                cloud_with_pg_sensor_sync_.reset( new message_filters::Synchronizer<cloud_with_pg_policy>(cloud_with_pg_policy(10), ori_xtion_rgb_sub_, ori_xtion_rgb_info_sub_, ori_xtion_cloud_sub_, ori_pg_rgb_sub_, ori_pg_rgb_info_sub_) );
+                cloud_with_pg_sensor_sync_->registerCallback( boost::bind( &DataPublisher::cloud_with_pg_callback, this, _1, _2, _3, _4, _5 ) );
             }
 
             // srv mode
@@ -357,7 +428,6 @@ public:
                 nh_->param<std::string>("target_srv_name", target_srv_name_, "/data_publish_srv");
                 ROS_INFO("server %s to start recognition", target_srv_name_.c_str());
 
-                recog_completed_ = true;
                 recog_server_ = nh.advertiseService( recog_srv_name_, &DataPublisher::recog_srv_callback, this);
                 obj_sub_ = nh.subscribe( obj_topic_name_, 1, &DataPublisher::recog_callback, this );
 
@@ -366,7 +436,6 @@ public:
                 nh_->param<std::string>("xtion_rgb_image", xtion_rgb_topic_, "/camera/lowres_rgb/image");
                 nh_->param<std::string>("xtion_depth_image", xtion_depth_topic_, "/camera/depth/image");
                 nh_->param<std::string>("xtion_rgb_info", xtion_rgb_info_topic_, "/camera/lowres_rgb/camera_info");
-                nh_->param<std::string>("xtion_depth_info", xtion_depth_info_topic_, "/camera/depth/camera_info");
                 nh_->param<std::string>("pg_rgb_image", camera_rgb_topic_, "/camera/highres_rgb/image");
                 nh_->param<std::string>("pg_rgb_info", camera_rgb_info_topic_, "/camera/highres_rgb/camera_info");
 
@@ -374,7 +443,6 @@ public:
                 xtion_rgb_pub_ = nh.advertise<sensor_msgs::Image>(xtion_rgb_topic_, 1);
                 xtion_rgb_info_pub_ = nh.advertise<sensor_msgs::CameraInfo>(xtion_rgb_info_topic_, 1);
                 xtion_depth_pub_ = nh.advertise<sensor_msgs::Image>(xtion_depth_topic_, 1);
-                xtion_depth_info_pub_ = nh.advertise<sensor_msgs::CameraInfo>(xtion_depth_info_topic_, 1);
                 camera_rgb_pub_ = nh.advertise<sensor_msgs::Image>(camera_rgb_topic_, 1);
                 camera_rgb_info_pub_ = nh.advertise<sensor_msgs::CameraInfo>(camera_rgb_info_topic_, 1);
 
@@ -400,7 +468,6 @@ public:
                 nh_->param<std::string>("target_srv_name", target_srv_name_, "/data_publish_srv");
                 ROS_INFO("server %s to start recognition", target_srv_name_.c_str());
 
-                recog_completed_ = true;
                 recog_server_ = nh.advertiseService( recog_srv_name_, &DataPublisher::recog_srv_callback, this);
                 obj_sub_ = nh.subscribe( obj_topic_name_, 1, &DataPublisher::recog_callback, this );
 
@@ -409,7 +476,6 @@ public:
                 nh_->param<std::string>("xtion_rgb_image", xtion_rgb_topic_, "/camera/lowres_rgb/image");
                 nh_->param<std::string>("xtion_depth_image", xtion_depth_topic_, "/camera/depth/image");
                 nh_->param<std::string>("xtion_rgb_info", xtion_rgb_info_topic_, "/camera/lowres_rgb/camera_info");
-                nh_->param<std::string>("xtion_depth_info", xtion_depth_info_topic_, "/camera/depth/camera_info");
                 nh_->param<std::string>("pg_rgb_image", camera_rgb_topic_, "/camera/highres_rgb/image");
                 nh_->param<std::string>("pg_rgb_info", camera_rgb_info_topic_, "/camera/highres_rgb/camera_info");
 
@@ -417,7 +483,6 @@ public:
                 xtion_rgb_pub_ = nh.advertise<sensor_msgs::Image>(xtion_rgb_topic_, 1);
                 xtion_rgb_info_pub_ = nh.advertise<sensor_msgs::CameraInfo>(xtion_rgb_info_topic_, 1);
                 xtion_depth_pub_ = nh.advertise<sensor_msgs::Image>(xtion_depth_topic_, 1);
-                xtion_depth_info_pub_ = nh.advertise<sensor_msgs::CameraInfo>(xtion_depth_info_topic_, 1);
                 camera_rgb_pub_ = nh.advertise<sensor_msgs::Image>(camera_rgb_topic_, 1);
                 camera_rgb_info_pub_ = nh.advertise<sensor_msgs::CameraInfo>(camera_rgb_info_topic_, 1);
 
@@ -432,12 +497,6 @@ public:
             }
         }
         publish_thread_ = boost::thread(boost::bind(&DataPublisher::publisher, this));
-        ros::MultiThreadedSpinner spinner(4);
-        ros::Rate loop(10);
-        while ( ros::ok() ) {
-            spinner.spin();
-            loop.sleep();
-        }
     }
 
     // object recognition results subscribe
@@ -455,13 +514,7 @@ public:
         ROS_INFO("[recog_srv_callback] recog compeletion request received");
         if ( req.recog == true )
             ROS_INFO( "Object recognition successed" );
-        /*
-        {
-            boost::mutex::scoped_lock lock( recog_completed_mutex_ );
-            recog_completed_ = true;
-        }
-        recog_completed_cond_.notify_one();
-        */
+
         resp.pub = true;
         return true;
     }
@@ -470,150 +523,78 @@ public:
 
 
     void publisher() {
+
         while ( nh_->ok() ) {
-            if ( online_mode_ == true ) {
-                for ( count_ = 0; count_ < (int)bin_contents_.size(); ++  count_ ) {
-                    {
-                        boost::mutex::scoped_lock lock(sensor_mutex_);
-                        while(sensor_empty_) {
-                            sensor_cond_.wait( lock );
-                        }
+
+            for ( count_ = 0; count_ < (int)bin_contents_.size(); ++  count_ ) {
+                cv_bridge::CvImage xtion_rgb_cv;
+                cv_bridge::CvImage xtion_depth_cv;
+                cv_bridge::CvImage pg_rgb_cv;
+
+                sensor_msgs::Image xtion_rgb_msg;
+                sensor_msgs::Image xtion_depth_msg;
+                sensor_msgs::Image pg_rgb_msg;
+                sensor_msgs::CameraInfo xtion_rgb_info_msg;
+                sensor_msgs::CameraInfo pg_rgb_info_msg;
+
+
+                string bin_id = work_order_[count_].first;
+
+                if ( online_mode_ == true ) {
+                    boost::mutex::scoped_lock lock(sensor_mutex_);
+                    while(sensor_empty_) {
+                        sensor_cond_.wait( lock );
                     }
 
-                    string bin_id = work_order_[count_].first;
 
-                    // generate msgs
-                    sensor_data_.xtion_rgb->toImageMsg( this->xtion_rgb_msg_ );
-                    sensor_data_.xtion_depth->toImageMsg( this->xtion_depth_msg_ );
-                    cam_model_to_msg( this->xtion_rgb_info_msg_, sensor_data_.xtion_rgb_model );
-                    this->xtion_rgb_info_msg_.width = this->xtion_rgb_msg_.width;
-                    this->xtion_rgb_info_msg_.height = this->xtion_rgb_msg_.height;
-                    cam_model_to_msg( this->xtion_depth_info_msg_, sensor_data_.xtion_rgb_model );
-                    this->xtion_depth_info_msg_.width = this->xtion_depth_msg_.width;
-                    this->xtion_depth_info_msg_.height = this->xtion_depth_msg_.height;
+                    xtion_rgb_cv.image = sensor_data_.xtion_rgb;
+                    xtion_rgb_cv.encoding = sensor_msgs::image_encodings::BGR8;
+                    xtion_rgb_cv.toImageMsg( xtion_rgb_msg );
 
-                    if ( srv_mode_ == 1 ) {
-                        apc_msgs::TargetRequest target_req_srv;
+                    // generate xtion depth msg
+                    xtion_depth_cv.image  = sensor_data_.xtion_depth;
+                    xtion_depth_cv.encoding = sensor_msgs::image_encodings::MONO16;
+                    xtion_depth_cv.toImageMsg( xtion_depth_msg );
 
-                        // generate target request
-                        target_req_srv.request.BinID = bin_id;
-                        target_req_srv.request.ObjectName  = work_order_[count_].second;
-                        vector<string> bin_content = bin_contents_[work_order_[count_].first];
-                        for ( int i = 0; i < (int)bin_content.size(); ++ i ) {
-                            target_req_srv.request.BinContents.push_back( bin_content[i] );
-                        }
-                        vector<int8_t> removed_indices;
-                        target_req_srv.request.RemovedObjectIndices = removed_indices;
 
-                        // wait for recogniser done before sending request
-                        /*
-                        {
-                            boost::mutex::scoped_lock lock(recog_completed_mutex_);
-                            while ( !recog_completed_ ) {
-                                recog_completed_cond_.wait(lock);
-                            }
-                        }
-                        */
+                    cam_model_to_msg( xtion_rgb_info_msg, sensor_data_.xtion_rgb_model );
+                    xtion_rgb_info_msg.width = xtion_depth_msg.width;
+                    xtion_rgb_info_msg.height = xtion_depth_msg.height;
 
-                        target_req_srv.request.use_cloud = use_pointcloud_;
-                        target_req_srv.request.use_pg = this->use_pg_;
-                        ROS_INFO( "request object name %s, sending ...",  target_req_srv.request.ObjectName.c_str() );
-                       if ( client_.call( target_req_srv ) )
-                            ROS_INFO( "return status: %s", target_req_srv.response.Found? "true" : "false" );
-                        else
-                            ROS_ERROR( "Target object: %s, failed to call service target_object", target_req_srv.request.ObjectName.c_str() );
+                    // optional pg image
+                    if ( use_pg_ == true ) {
+                        // generate pg rgb msg
+                        pg_rgb_cv.image = sensor_data_.pg_rgb;
+                        pg_rgb_cv.encoding = sensor_msgs::image_encodings::BGR8;
+                        pg_rgb_cv.toImageMsg( pg_rgb_msg );
 
-                        sleep(1);
-
-                        xtion_rgb_pub_.publish( this->xtion_rgb_msg_ );
-                        xtion_rgb_info_pub_.publish( this->xtion_rgb_info_msg_ );
-                        xtion_depth_pub_.publish( this->xtion_depth_msg_ );
-                        xtion_depth_info_pub_.publish( this->xtion_depth_info_msg_ );
-                        if ( this->use_pg_ = true ) {
-                            sensor_data_.pg_rgb->toImageMsg( this->pg_rgb_msg_ );
-                            camera_rgb_pub_.publish( this->pg_rgb_msg_ );
-                            cam_model_to_msg( this->pg_rgb_info_msg_, sensor_data_.pg_rgb_model );
-                            this->pg_rgb_info_msg_.width = this->pg_rgb_msg_.width;
-                            this->pg_rgb_info_msg_.height = this->pg_rgb_msg_.height;
-                            camera_rgb_info_pub_.publish( this->pg_rgb_info_msg_ );
-                        }
-
-                        // after publish set recogniser flag to false
-                        recog_completed_mutex_.lock();
-                        recog_completed_ = false;
-                        recog_completed_mutex_.unlock();
-                    }
-                    else if (srv_mode_ == 2) {
-                        apc_msgs::RecogniseALG target_req_srv;
-                        target_req_srv.request.bin_id = bin_id;
-                        target_req_srv.request.ObjectName  = work_order_[count_].second;
-                        vector<string> bin_content = bin_contents_[work_order_[count_].first];
-                        for ( int i = 0; i < (int)bin_content.size(); ++ i ) {
-                            target_req_srv.request.BinContents.push_back( bin_content[i] );
-                        }
-                        vector<int8_t> removed_indices;
-                        target_req_srv.request.RemovedObjectIndices = removed_indices;
-
-                        // generate xtion rgb msg
-                        target_req_srv.request.xtion_rgb_image = this->xtion_rgb_msg_;
-                        target_req_srv.request.xtion_depth_image = this->xtion_depth_msg_;
-                        target_req_srv.request.xtion_rgb_info = this->xtion_rgb_info_msg_;
-                        target_req_srv.request.xtion_depth_info = this->xtion_depth_info_msg_;
-                        target_req_srv.request.use_cloud = false;
-
-                        if ( this->use_pg_ == true ) {
-                            target_req_srv.request.use_cloud = true;
-                            sensor_data_.pg_rgb->toImageMsg( pg_rgb_msg_ );
-                            target_req_srv.request.pg_rgb_image = pg_rgb_msg_;
-                            cam_model_to_msg( target_req_srv.request.pg_rgb_info, sensor_data_.pg_rgb_model );
-                            target_req_srv.request.pg_rgb_info.width = target_req_srv.request.pg_rgb_image.width;
-                            target_req_srv.request.pg_rgb_info.height = target_req_srv.request.pg_rgb_image.height;
-                        }
-
-                        ROS_INFO( "request object name %s, sending ...",  target_req_srv.request.ObjectName.c_str() );
-                       if ( client_.call( target_req_srv ) ) {
-                            ROS_INFO( "return status: %s", target_req_srv.response.found? "true" : "false" );
-                        }
-                        else {
-                            ROS_ERROR( "Target object: %s, failed to call service target_object", target_req_srv.request.ObjectName.c_str() );
-                        }
-
-                        {
-                            boost::mutex::scoped_lock lock( recog_completed_mutex_ );
-                            recog_completed_ = true;
-                        }
-                        recog_completed_cond_.notify_one();
-
-                        sensor_mutex_.lock();
-                        sensor_empty_ = true;
-                        sensor_mutex_.unlock();
+                        // generate pg rgb camera info
+                        cam_model_to_msg( pg_rgb_info_msg, sensor_data_.pg_rgb_model );
+                        pg_rgb_info_msg.width = pg_rgb_msg.width;
+                        pg_rgb_info_msg.height = pg_rgb_msg.height;
                     }
                 }
-            }
-            else if ( online_mode_ == false ) {
-                for ( count_ = 0; count_ < (int)bin_contents_.size(); ++ count_ ) {
-                    // generate bin id using ascii table
-                    string bin_id = work_order_[count_].first;
-
+                else
+                {
                     // generate sensor information msgs
                     // generate filenames
                     std::string xtion_rgb_name = dir_ + "/xtion_rgb_" + boost::lexical_cast<std::string>(count_+1) + ".png";
                     std::string xtion_depth_name = dir_ + "/xtion_depth_" + boost::lexical_cast<std::string>(count_+1) + ".png";  // for depth images, .png
                     std::string xtion_rgb_info_name = dir_ + "/xtion_rgb_info_" + boost::lexical_cast<std::string>(count_+1) + ".yml";
-                    std::string xtion_depth_info_name = dir_ + "/xtion_depth_info_" + boost::lexical_cast<std::string>(count_+1) + ".yml";
-
-                    cv_bridge::CvImage xtion_rgb_cv;
-                    cv_bridge::CvImage xtion_depth_cv;
 
                     // generate xtion rgb msg
                     xtion_rgb_cv.image = cv::imread( xtion_rgb_name, CV_LOAD_IMAGE_COLOR );
                     xtion_rgb_cv.encoding = sensor_msgs::image_encodings::BGR8;
-                    xtion_rgb_cv.toImageMsg( xtion_rgb_msg_ );
+                    xtion_rgb_cv.toImageMsg( xtion_rgb_msg );
 
                     // generate xtion depth msg
                     xtion_depth_cv.image  = cv::imread( xtion_depth_name, CV_LOAD_IMAGE_ANYDEPTH );
                     xtion_depth_cv.encoding = sensor_msgs::image_encodings::MONO16;
-                    xtion_depth_cv.toImageMsg( xtion_depth_msg_ );
+                    xtion_depth_cv.toImageMsg( xtion_depth_msg );
+
+//                    cv::imshow( "rgb", xtion_rgb_cv.image );
+//                    cv::imshow( "depth", xtion_depth_cv.image );
+//                    cv::waitKey(0);
 
                     // generate xtion rgb camera info
                     int idx = 0;
@@ -633,55 +614,20 @@ public:
                     for ( int y = 0; y < xtion_rgb_dist.rows; ++ y )
                         for ( int x = 0; x < xtion_rgb_dist.cols; ++ x )
                             xtion_rgb_boost_d.push_back( xtion_rgb_dist.at<double>(y,x) );
-                    xtion_rgb_info_msg_.height = xtion_rgb_cv.image.rows;
-                    xtion_rgb_info_msg_.width  = xtion_rgb_cv.image.cols;
-                    xtion_rgb_info_msg_.P = xtion_rgb_boost_p;
-                    xtion_rgb_info_msg_.D = xtion_rgb_boost_d;
-
-                    // generate xtion depth camera info
-                    cv::FileStorage xtion_depth_fs(xtion_depth_info_name, cv::FileStorage::READ);
-                    cv::Mat xtion_depth_proj, xtion_depth_dist;
-                    xtion_depth_fs["Projection"] >> xtion_depth_proj;
-                    xtion_depth_fs["Distortion"] >> xtion_depth_dist;
-                    boost::array<double, 12> xtion_depth_boost_p;
-                    for ( int y = 0; y < xtion_depth_proj.rows; ++ y ) {
-                        for ( int x = 0; x < xtion_depth_proj.cols; ++ x ) {
-                            xtion_depth_boost_p[idx] = y*xtion_depth_proj.cols+x;
-                            idx ++;
-                        }
-                    }
-                    idx = 0;
-                    std::vector<double> xtion_depth_boost_d;
-                    for ( int y = 0; y < xtion_depth_dist.rows; ++ y )
-                        for ( int x = 0; x < xtion_depth_dist.cols; ++ x )
-                            xtion_depth_boost_d.push_back( xtion_depth_dist.at<double>(y,x) );
-                    idx = 0;
-                    xtion_depth_info_msg_.height = xtion_depth_cv.image.rows;
-                    xtion_depth_info_msg_.width  = xtion_depth_cv.image.cols;
-                    xtion_depth_info_msg_.P = xtion_depth_boost_p;
-                    xtion_depth_info_msg_.D = xtion_depth_boost_d;
-
-
-
-                    // optional point cloud
-                    if( use_pointcloud_ == true ) {
-                        std::string xtion_cloud_name = dir_ + "/xtion_cloud_" + boost::lexical_cast<std::string>(count_+1) + ".pcd";
-                        // publish point cloud message
-                        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud( new pcl::PointCloud<pcl::PointXYZRGB>() );
-                        pcl::io::loadPCDFile( xtion_cloud_name, *cloud );
-                        pcl::toROSMsg( *cloud, xtion_cloud_msg_ );
-                    }
+                    xtion_rgb_info_msg.height = xtion_rgb_cv.image.rows;
+                    xtion_rgb_info_msg.width  = xtion_rgb_cv.image.cols;
+                    xtion_rgb_info_msg.P = xtion_rgb_boost_p;
+                    xtion_rgb_info_msg.D = xtion_rgb_boost_d;
 
                     // optional pg image
                     if ( use_pg_ == true ) {
                         std::string camera_rgb_name = dir_ + "/camera_rgb_" + boost::lexical_cast<std::string>(count_+1) + ".png";
                         std::string camera_rgb_info_name = dir_ + "/camera_rgb_info_" + boost::lexical_cast<std::string>(count_+1) + ".yml";
-                        cv_bridge::CvImage camera_rgb_cv;
 
                         // generate pg rgb msg
-                        camera_rgb_cv.image = cv::imread( camera_rgb_name, CV_LOAD_IMAGE_COLOR );
-                        camera_rgb_cv.encoding = sensor_msgs::image_encodings::BGR8;
-                        camera_rgb_cv.toImageMsg( pg_rgb_msg_ );
+                        pg_rgb_cv.image = cv::imread( camera_rgb_name, CV_LOAD_IMAGE_COLOR );
+                        pg_rgb_cv.encoding = sensor_msgs::image_encodings::BGR8;
+                        pg_rgb_cv.toImageMsg( pg_rgb_msg );
 
                         // generate pg rgb camera info
                         cv::FileStorage camera_rgb_fs(camera_rgb_info_name, cv::FileStorage::READ);
@@ -700,98 +646,96 @@ public:
                         for ( int y = 0; y < camera_rgb_dist.rows; ++ y )
                             for ( int x = 0; x < camera_rgb_dist.cols; ++ x )
                                 camera_rgb_boost_d.push_back( camera_rgb_dist.at<double>(y,x) );
-                        pg_rgb_info_msg_.height = camera_rgb_cv.image.rows;
-                        pg_rgb_info_msg_.width  = camera_rgb_cv.image.cols;
-                        pg_rgb_info_msg_.P = camera_rgb_boost_p;
-                        pg_rgb_info_msg_.D = camera_rgb_boost_d;
+                        pg_rgb_info_msg.height = pg_rgb_cv.image.rows;
+                        pg_rgb_info_msg.width  = pg_rgb_cv.image.cols;
+                        pg_rgb_info_msg.P = camera_rgb_boost_p;
+                        pg_rgb_info_msg.D = camera_rgb_boost_d;
+                    }
+                }
+
+                if ( srv_mode_ == 1 ) {
+                    apc_msgs::TargetRequest target_req_srv;
+
+                    // generate target request
+                    target_req_srv.request.BinID = bin_id;
+                    target_req_srv.request.ObjectName  = work_order_[count_].second;
+                    vector<string> bin_content = bin_contents_[work_order_[count_].first];
+                    for ( int i = 0; i < (int)bin_content.size(); ++ i ) {
+                        target_req_srv.request.BinContents.push_back( bin_content[i] );
+                    }
+                    vector<int8_t> removed_indices;
+                    target_req_srv.request.RemovedObjectIndices = removed_indices;
+                    target_req_srv.request.use_cloud = use_pointcloud_;
+                    target_req_srv.request.use_pg = use_pg_;
+                    ROS_INFO( "request object name %s, sending ...",  target_req_srv.request.ObjectName.c_str() );
+                   if ( client_.call( target_req_srv ) ) {
+                        ROS_INFO( "return status: %s", target_req_srv.response.Found? "true" : "false" );
+                    }
+                    else {
+                        ROS_ERROR( "Target object: %s, failed to call service target_object", target_req_srv.request.ObjectName.c_str() );
                     }
 
-                    if ( srv_mode_ == 1 ) {
-                        apc_msgs::TargetRequest target_req_srv;
+                    sleep(1);
 
-                        // generate target request
-                        target_req_srv.request.BinID = bin_id;
-                        target_req_srv.request.ObjectName  = work_order_[count_].second;
-                        vector<string> bin_content = bin_contents_[work_order_[count_].first];
-                        for ( int i = 0; i < (int)bin_content.size(); ++ i ) {
-                            target_req_srv.request.BinContents.push_back( bin_content[i] );
-                        }
-                        vector<int8_t> removed_indices;
-                        target_req_srv.request.RemovedObjectIndices = removed_indices;
-
-                        // wait for recogniser done before sending request
-                        //
-                        //{
-                        //    boost::mutex::scoped_lock lock(recog_completed_mutex_);
-                        //    while ( !recog_completed_ ) {
-                        //        recog_completed_cond_.wait(lock);
-                        //    }
-                        //}
-
-
-                        target_req_srv.request.use_cloud = use_pointcloud_;
-                        target_req_srv.request.use_pg = use_pg_;
-                        ROS_INFO( "request object name %s, sending ...",  target_req_srv.request.ObjectName.c_str() );
-                       if ( client_.call( target_req_srv ) ) {
-                            ROS_INFO( "return status: %s", target_req_srv.response.Found? "true" : "false" );
-                        }
-                        else {
-                            ROS_ERROR( "Target object: %s, failed to call service target_object", target_req_srv.request.ObjectName.c_str() );
-                        }
-
-                        sleep(1);
-
-                        xtion_rgb_pub_.publish( xtion_rgb_msg_ );
-                        xtion_rgb_info_pub_.publish( xtion_rgb_info_msg_ );
-                        xtion_depth_pub_.publish( xtion_depth_msg_ );
-                        xtion_depth_info_pub_.publish( xtion_depth_info_msg_ );
-                        if ( use_pg_ == true ) {
-                            camera_rgb_pub_.publish( pg_rgb_msg_ );
-                            camera_rgb_info_pub_.publish( pg_rgb_info_msg_ );
-                        }
-                        if( use_pointcloud_ == true ) {
-                            xtion_cloud_pub_.publish( xtion_cloud_msg_ );
-                        }
-
-                        // after publish set recogniser flag to false
-                        recog_completed_mutex_.lock();
-                        recog_completed_ = false;
-                        recog_completed_mutex_.unlock();
+                    xtion_rgb_pub_.publish( xtion_rgb_msg );
+                    xtion_rgb_info_pub_.publish( xtion_rgb_info_msg );
+                    xtion_depth_pub_.publish( xtion_depth_msg );
+                    if ( use_pg_ == true ) {
+                        camera_rgb_pub_.publish( pg_rgb_msg );
+                        camera_rgb_info_pub_.publish( pg_rgb_info_msg );
                     }
-                    else if (srv_mode_ == 2) {
-                        apc_msgs::RecogniseALG target_req_srv;
-                        target_req_srv.request.bin_id = bin_id;
-                        target_req_srv.request.ObjectName  = work_order_[count_].second;
-                        vector<string> bin_content = bin_contents_[work_order_[count_].first];
-                        for ( int i = 0; i < (int)bin_content.size(); ++ i ) {
-                            target_req_srv.request.BinContents.push_back( bin_content[i] );
-                        }
-                        vector<int8_t> removed_indices;
-                        target_req_srv.request.RemovedObjectIndices = removed_indices;
-
-                        target_req_srv.request.xtion_rgb_image = xtion_rgb_msg_;
-                        target_req_srv.request.xtion_depth_image = xtion_depth_msg_;
-                        target_req_srv.request.xtion_rgb_info = xtion_rgb_info_msg_;
-                        target_req_srv.request.xtion_depth_info = xtion_depth_info_msg_;
-                        target_req_srv.request.use_pg = use_pg_;
-                        if ( use_pg_ == true ) {
-                            target_req_srv.request.pg_rgb_image = pg_rgb_msg_;
-                            target_req_srv.request.pg_rgb_info = pg_rgb_info_msg_;
-                        }
-
-                        if ( use_pointcloud_ == true ) {
-                            target_req_srv.request.use_cloud = true;
-                            target_req_srv.request.cloud = xtion_cloud_msg_;
-                        }
-
-                        ROS_INFO( "request object name %s, sending ...", target_req_srv.request.ObjectName.c_str() );
-                       if ( client_.call( target_req_srv ) ) {
-                            ROS_INFO( "return status: %s", target_req_srv.response.found? "true" : "false" );
-                        }
-                        else {
-                            ROS_ERROR( "Target object: %s, failed to call service target_object", target_req_srv.request.ObjectName.c_str() );
-                        }
+                }
+                else if (srv_mode_ == 2) {
+                    apc_msgs::RecogniseALG target_req_srv;
+                    target_req_srv.request.bin_id = bin_id;
+                    target_req_srv.request.ObjectName  = work_order_[count_].second;
+                    vector<string> bin_content = bin_contents_[work_order_[count_].first];
+                    for ( int i = 0; i < (int)bin_content.size(); ++ i ) {
+                        target_req_srv.request.BinContents.push_back( bin_content[i] );
                     }
+                    vector<int8_t> removed_indices;
+                    target_req_srv.request.RemovedObjectIndices = removed_indices;
+
+                    target_req_srv.request.xtion_rgb_image = xtion_rgb_msg;
+                    target_req_srv.request.xtion_depth_image = xtion_depth_msg;
+                    target_req_srv.request.xtion_rgb_info = xtion_rgb_info_msg;
+                    target_req_srv.request.use_pg = use_pg_;
+                    if ( use_pg_ == true ) {
+                        target_req_srv.request.pg_rgb_image = pg_rgb_msg;
+                        target_req_srv.request.pg_rgb_info = pg_rgb_info_msg;
+                    }
+
+                    ROS_INFO( "request object name %s, sending ...", target_req_srv.request.ObjectName.c_str() );
+                   if ( client_.call( target_req_srv ) ) {
+                        ROS_INFO( "return status: %s", target_req_srv.response.found? "true" : "false" );
+                    }
+                    else {
+                        ROS_ERROR( "Target object: %s, failed to call service target_object", target_req_srv.request.ObjectName.c_str() );
+                    }
+                }
+                if ( online_mode_ == true ) {
+                    ori_xtion_rgb_sub_.subscribe( *nh_, ori_xtion_rgb_topic_, 1);
+                    ori_xtion_rgb_info_sub_.subscribe( *nh_, ori_xtion_rgb_info_topic_, 1);
+                    ori_xtion_cloud_sub_.subscribe( *nh_, ori_xtion_cloud_topic_, 1 );
+                    if ( use_pg_ == true ) {
+                        ori_pg_rgb_sub_.subscribe( *nh_, ori_pg_rgb_topic_, 1);
+                        ori_pg_rgb_info_sub_.subscribe( *nh_, ori_pg_rgb_info_topic_, 1);
+                    }
+
+                    if ( use_pg_ == false ) {
+                        cloud_without_pg_sensor_sync_.reset( new message_filters::Synchronizer<cloud_without_pg_policy>( cloud_without_pg_policy(10), ori_xtion_rgb_sub_, ori_xtion_rgb_info_sub_, ori_xtion_cloud_sub_ ) );
+                        cloud_without_pg_sensor_sync_->registerCallback( boost::bind( &DataPublisher::cloud_without_pg_callback, this, _1, _2, _3 ) );
+                    }
+                    else {
+                        cloud_with_pg_sensor_sync_.reset( new message_filters::Synchronizer<cloud_with_pg_policy>(cloud_with_pg_policy(10), ori_xtion_rgb_sub_, ori_xtion_rgb_info_sub_, ori_xtion_cloud_sub_, ori_pg_rgb_sub_, ori_pg_rgb_info_sub_) );
+                        cloud_with_pg_sensor_sync_->registerCallback( boost::bind( &DataPublisher::cloud_with_pg_callback, this, _1, _2, _3, _4, _5 ) );
+                    }
+
+                    sleep(1);
+
+                    sensor_mutex_.lock();
+                    sensor_empty_ = true;
+                    sensor_mutex_.unlock();
                 }
             }
         }
@@ -818,6 +762,7 @@ int main( int argc, char ** argv ) {
     ros::init( argc, argv, "data_publisher" );
     ros::NodeHandle nh("~");
     DataPublisher publisher( nh );
+    ros::spin();
     return 1;
 }
 

@@ -1,18 +1,6 @@
 cmake_minimum_required(VERSION 2.4.6)
-project( uts_recogniser )
-
-if(DEFINED CATKIN_DEVEL_PREFIX)
-  set(USE_CATKIN true)
-else()
-  set(USE_CATKIN false)
-endif()
-
-################################### ros_build ####################################
-if(NOT USE_CATKIN)
-
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -fpermissive -O3")
 
 # Set the build type.  Options are:
 #  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
@@ -30,53 +18,32 @@ rosbuild_init()
 #rosbuild_gensrv()
 #rosbuild_genmsg()
 
+project( uts_recogniser )
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2 -msse3 -fpermissive -O3")
+
 
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-################################### catkin #########################################
-else()
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/dependencies/")
+set( ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CMAKE_SOURCE_DIR}/dependencies/" )
 
-find_package(catkin REQUIRED COMPONENTS
-  std_msgs
-  geometry_msgs
-  sensor_msgs
-  actionlib_msgs
-  roscpp
-  rospy
-  message_filters
-  image_geometry
-  pcl_ros
-  pcl_conversions
-  image_transport
-  cv_bridge
-  apc_msgs
-)
 
-find_package(Boost REQUIRED COMPONENTS thread system filesystem)
-
-include_directories(include)
-
-catkin_package()
-
-endif()
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/")
-set( ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${CMAKE_CURRENT_SOURCE_DIR}/dependencies/" )
 
 find_package(PkgConfig REQUIRED)
 
 # check for OpenMP
 find_package(OpenMP)
 if(OPENMP_FOUND)
-    message(STATUS "Enabling OpenMP support")
+    message("== Enabling OpenMP support")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 else()
-    message(STATUS "Disabling OpenMP support")
+    message("== Disabling OpenMP support")
 endif()
 
 find_package(FLANN REQUIRED)
@@ -168,7 +135,7 @@ set( KDES_H
 
 # build kdes library
 set( KDES_LIB kdes )
-add_library(${KDES_LIB} ${KDES_CPP} ${KDES_H} )
+add_library(${KDES_LIB} STATIC ${KDES_CPP} ${KDES_H} )
 target_link_libraries( ${KDES_LIB} ${OpenCV_LIBS} ${Boost_LIBRARIES} ${MATIO_LIBRARIES} )
 
 
@@ -207,28 +174,9 @@ set( HELPFUN_CPP
 # build helpfun library
 set( HELPFUN_LIB helpfun )
 add_library( ${HELPFUN_LIB} STATIC ${HELPFUN_H} ${HELPFUN_CPP} )
-target_link_libraries( ${HELPFUN_LIB} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${EBLEARN_LIBRARIES}
-  ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/libANN.a
-  ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/liblevmar.a
-  ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/libsiftfast.a )
+target_link_libraries( ${HELPFUN_LIB} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${EBLEARN_LIBRARIES} ${KDES_LIB}  ${CMAKE_SOURCE_DIR}/dependencies/libANN.a ${CMAKE_SOURCE_DIR}/dependencies/liblevmar.a ${CMAKE_SOURCE_DIR}/dependencies/libsiftfast.a )
 
-if (USE_CATKIN)
 
-add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/uts_recogniser.cpp ${PROJECT_SOURCE_DIR}/include/uts_recogniser.h)
-target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES} ${HELPFUN_LIB} ${KDES_LIB} ${catkin_LIBRARIES})
-add_dependencies(${PROJECT_NAME} apc_msgs_generate_messages_cpp)
-
-add_executable(uts_init ${PROJECT_SOURCE_DIR}/src/uts_init.cpp )
-target_link_libraries(uts_init ${PCL_LIBRARIES} ${OpenCV_LIBS} ${BLAS_LIBRARIES} ${catkin_LIBRARIES})
-add_dependencies(uts_init apc_msgs_generate_messages_cpp)
-
-add_executable( pseudo_request src/pseudo_request.cpp )
-target_link_libraries(pseudo_request ${catkin_LIBRARIES})
-add_dependencies(pseudo_request apc_msgs_generate_messages_cpp)
-
-add_executable( json_generator src/json_generator.cpp )
-
-else()
 
 rosbuild_add_boost_directories()
 
@@ -246,7 +194,6 @@ rosbuild_add_executable( pseudo_request src/pseudo_request.cpp )
 
 rosbuild_add_executable( json_generator src/json_generator.cpp )
 
-endif()
 
 #rosbuild_add_executable(kd_test ${PROJECT_SOURCE_DIR}/src/kd_test.cpp)
 #rosbuild_link_boost(kd_test thread system filesystem program_options signals )

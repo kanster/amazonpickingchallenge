@@ -43,7 +43,7 @@ private:
 
 
 private:
-    // model filename
+    //! model filename
     string svm_model_name_;
     string kdes_model_name_;
     string model_folder_;
@@ -52,25 +52,32 @@ private:
 
     SlidingWindowDetector * swd_;
 
-    // environment settings
+    //! environment settings
     vector<string> target_bin_content_;
     string target_object_;
     int target_in_bin_;
 
-    // pri-collect information
+    //! pri-collect information
     cv::Mat empty_image_;
     cv::Mat empty_depth_;
     cv::Mat mask_image_;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr empty_cloud_;
 
-    // input sensor information
+    //! input sensor information
     cv::Mat rgb_image_;
     cv::Mat depth_image_;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_;
 
-    // sliding box settings
+    //! sliding box settings
     int step_size_;
-    int bbox_size_;
+    int
+    bbox_size_;
+
+    //! subtracted image
+    cv::Mat sub_image_;
+
+    //! remove duplicated items
+    vector<pair<string, int> > dup_items_;
 
     KernelDescManager * kdes_;
 
@@ -98,6 +105,11 @@ public:
     void init_libkdes( string svm_model_name, string kdes_model_name, string model_folder, string model, unsigned int model_type );
 
     void process( vector<pair<string, vector<cv::Point> > > & results, bool use_rgb = true );
+
+    cv::Mat get_mask_image();
+
+    vector<pair<string, int> > get_dup_items();
+
 };
 
 

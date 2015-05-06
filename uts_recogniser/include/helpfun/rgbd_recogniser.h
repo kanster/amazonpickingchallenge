@@ -3,7 +3,6 @@
 
 #include "include/helpfun/utils.h"
 
-#include "include/helpfun/mask_generator.h"
 #include "include/helpfun/feature_detector.h"
 #include "include/helpfun/feature_matcher.h"
 #include "include/helpfun/svd_pose_estimator.h"
@@ -78,36 +77,34 @@ private:
 
     vector<DetectedFeatureRGBD> detected_features_;
 
-    pcl::PointCloud<pcl::PointXYZRGBL>::Ptr labeled_cloud_;
 
     typedef vector<MatchRGBD> Matches;
     Matches matches_;
     vector< list<int> > clusters_;
 
-    list<SP_Object> objects_;
 private:
     void filter_objects();
 
-
 public:
-    /** constructor */
-    RGBDRecogniser( cv::Mat rgb_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud/*, string seg_model_dir*/ );
+    //! constructor
+    RGBDRecogniser( cv::Mat rgb_image, cv::Mat mask_image, cv::Mat depth_image, Vector4f param );
 
-    /** constructor with mask image */
-    RGBDRecogniser( cv::Mat rgb_image, cv::Mat mask_image, cv::Mat depth_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud/*, string seg_model_dir*/ );
+    //! set bin contents
+    void set_bin_contents( vector<string> items );
 
+    //! set target item
+    void set_target_item( string target );
+
+    //! run
+    bool run( list<SP_Object> &objects, RGBDParam param, bool visualise );
+
+    //! load models
     void load_models( string models_dir );
 
-    /** set target item related variables */
-    void set_env_configuration( int idx, vector<pair<string, string> > work_order, map<string, vector<string> > bin_contents );
-    void set_env_configuration( string target_item, vector<string> items );
+    //! filter items
+    void filter_objects( list<SP_Object> & objects );
 
-    /** set camera parameters */
-    void set_camera_params( float fx, float fy, float cx, float cy );
 
-    bool run( bool visualise );
-
-    list<SP_Object> get_objects();
 
 };
 
