@@ -129,8 +129,11 @@ bool RGBDRecogniser::run( list<SP_Object> &objects, RGBDParam param, bool visual
         display_matches( this->rgb_image_, this->matches_ );
         display_clusters( this->rgb_image_, this->matches_, this->clusters_ );
         display_pose( this->rgb_image_, objects, this->params_ );
+        cv::waitKey(0);
     }
-
-    return true;
+    if ( !objects.empty() )
+        return true;
+    else
+        return false;
 }
 

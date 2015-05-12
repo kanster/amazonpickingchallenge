@@ -2,10 +2,10 @@
   <node name="uts_init" cwd="node" pkg="uts_recogniser" type="uts_init" output="screen">
 
     <!-- save data directory -->
-    <param name="save_dir" type="str" value="../data/201505060922/"/>
+    <param name="save_dir" type="str" value="../data/201505101333/"/>
 
     <!-- use point grey high reso image -->
-    <param name="use_pg" type="bool" value="false"/>
+    <param name="use_pg" type="bool" value="true"/>
 
     <!-- number of bins -->
     <param name="n_bin" type="int" value="12"/>
@@ -14,7 +14,7 @@
     <param name="xtion_rgb_image" type="str" value="/camera/rgb/image_color"/>
     <param name="xtion_depth_image" type="str" value="/camera/depth/image_raw"/>
     <param name="xtion_cloud" type="str" value="/camera/depth_registered/points"/>
-    <param name="pg_rgb_image" type="str" value="/rgb_image"/>
+    <param name="pg_rgb_image" type="str" value="/camera/rgb/image_color"/>
 
   </node>
 </launch>

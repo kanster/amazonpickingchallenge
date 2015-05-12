@@ -36,6 +36,7 @@ int main( int argc, char** argv ) {
     boost::property_tree::ptree root;
     boost::property_tree::ptree wo_tree;
     boost::property_tree::ptree bc_tree;
+    srand(time(NULL));
     for ( int i = 0; i < 12; ++ i ) {
         int n_items = rand()%3+1;
         std::vector<std::string> bin_items;

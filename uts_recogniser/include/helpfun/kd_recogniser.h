@@ -81,9 +81,10 @@ private:
 
     KernelDescManager * kdes_;
 
-    void find_blobs( const cv::Mat & binary, vector< vector<cv::Point2i> > & blobs );
+    bool find_blobs( const cv::Mat & binary, vector< vector<cv::Point2i> > & blobs );
 
     cv::Mat from_score( MatrixXf score, int scale );
+
 
 public:
     KDRecogniser();
@@ -106,7 +107,11 @@ public:
 
     void process( vector<pair<string, vector<cv::Point> > > & results, bool use_rgb = true );
 
+    void patch_process( vector<pair<string, vector<cv::Point> > > & results, bool use_rgb = true );
+
     cv::Mat get_mask_image();
+
+    vector<cv::Point> convex_hull( cv::Mat detect_img, cv::Mat depth_img );
 
     vector<pair<string, int> > get_dup_items();
 

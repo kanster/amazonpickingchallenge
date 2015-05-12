@@ -157,12 +157,29 @@ bool RGBRecogniser::run( list<SP_Object> & objects, RGBParam param, int min_matc
         display_matches( this->rgb_image_, this->matches_ );
         display_clusters( this->rgb_image_, this->matches_, this->clusters_, cv::Point2i(640, 0) );
         display_pose( this->rgb_image_, objects, param.lmp1.camera_param );
+        cv::waitKey(0);
     }
 
     if ( !objects.empty() )
         return true;
     else
         return false;
+}
+
+vector<cv::Point> RGBRecogniser::get_convex_matches(int idx) {
+    vector<cv::Point> pts;
+    if ( this->clusters_.empty() )
+        return;
+    foreach( ipt, this->clusters_[idx] ) {
+        MatchRGB & m = this->matches_[ipt];
+        cv::Point pt;
+        pt.x = m.img2d(0);
+        pt.y = m.img2d(1);
+        pts.push_back( pt );
+    }
+    vector<cv::Point> cvxpts = get_convex_hull( pts );
+    return cvxpts;
+
 }
 
 

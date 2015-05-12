@@ -2,7 +2,7 @@
   <node name="pseudo_request" cwd="node" pkg="uts_recogniser" type="pseudo_request" output="screen">
 
     <!-- json file name -->
-    <param name="json" type="str" value="../data/201505041207.json"/>
+    <param name="json" type="str" value="../data/201505110933.json"/>
 
     <!-- sensor data directory -->
     <param name="data_dir" type="str" value="../data/201505060922/"/>

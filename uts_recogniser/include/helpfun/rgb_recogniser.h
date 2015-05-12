@@ -98,6 +98,9 @@ public:
 
     bool run( list<SP_Object> & objects, RGBParam param, int min_matches, int min_filtered_matches, bool visualise );
 
+    //! get convex hull of matched features
+    vector<cv::Point> get_convex_matches(int idx);
+
 
 };
 

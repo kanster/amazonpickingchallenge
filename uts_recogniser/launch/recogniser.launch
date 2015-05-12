@@ -2,7 +2,7 @@
   <node name="uts_recogniser" cwd="node" pkg="uts_recogniser" type="uts_recogniser" output="screen">
 
     <!-- json file name -->
-    <param name="json" type="str" value="../data/201505041207.json"/>
+    <param name="json" type="str" value="../data/201505110933.json"/>
 
     <!-- method file name -->
     <param name="method" type="str" value="../data/method.txt"/>
@@ -18,7 +18,7 @@
     <param name="xml_dir" type="str" value="../data/amazon_models/"/>
 
     <!-- mask image for each bin directory -->
-    <param name="mask_dir" type="str" value="../data/201505060922/"/>
+    <param name="mask_dir" type="str" value="../data/201505101019/"/>
 
     <!-- use point cloud or depth image -->
     <param name="use_cloud" type="bool" value="false"/>

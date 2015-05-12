@@ -236,6 +236,51 @@ private:
                 ori_xtion_rgb_info_sub_.unsubscribe();
                 ori_xtion_cloud_sub_.unsubscribe();
             }
+            else if ( k == 'a' ||
+                      k == 'b' ||
+                      k == 'c' ||
+                      k == 'd' ||
+                      k == 'e' ||
+                      k == 'f' ||
+                      k == 'g' ||
+                      k == 'h' ||
+                      k == 'i' ||
+                      k == 'j' ||
+                      k == 'k' ||
+                      k == 'l') {
+                if ( k == 'a' )
+                    count_ = 0;
+                else if ( k == 'b' )
+                    count_ = 1;
+                else if ( k == 'c' )
+                    count_ = 2;
+                else if ( k == 'd' )
+                    count_ = 3;
+                else if ( k == 'e' )
+                    count_ = 4;
+                else if ( k == 'f' )
+                    count_ = 5;
+                else if ( k == 'g' )
+                    count_ = 6;
+                else if ( k == 'h' )
+                    count_ = 7;
+                else if ( k == 'i' )
+                    count_ = 8;
+                else if ( k == 'j' )
+                    count_ = 9;
+                else if ( k == 'k' )
+                    count_ = 10;
+                else if ( k == 'l' )
+                    count_ = 11;
+                {
+                    boost::mutex::scoped_lock lock( sensor_mutex_ );
+                    sensor_empty_ = false;
+                }
+                sensor_cond_.notify_one();
+                ori_xtion_rgb_sub_.unsubscribe();
+                ori_xtion_rgb_info_sub_.unsubscribe();
+                ori_xtion_cloud_sub_.unsubscribe();
+            }
         }
     }
 
@@ -307,6 +352,54 @@ private:
                 }
                 sensor_cond_.notify_one();
 
+                ori_xtion_rgb_sub_.unsubscribe();
+                ori_xtion_rgb_info_sub_.unsubscribe();
+                ori_xtion_cloud_sub_.unsubscribe();
+                ori_pg_rgb_sub_.unsubscribe();
+                ori_pg_rgb_info_sub_.unsubscribe();
+            }
+            else if ( k == 'a' ||
+                      k == 'b' ||
+                      k == 'c' ||
+                      k == 'd' ||
+                      k == 'e' ||
+                      k == 'f' ||
+                      k == 'g' ||
+                      k == 'h' ||
+                      k == 'i' ||
+                      k == 'j' ||
+                      k == 'k' ||
+                      k == 'l') {
+                if ( k == 'a' )
+                    count_ = 0;
+                else if ( k == 'b' )
+                    count_ = 1;
+                else if ( k == 'c' )
+                    count_ = 2;
+                else if ( k == 'd' )
+                    count_ = 3;
+                else if ( k == 'e' )
+                    count_ = 4;
+                else if ( k == 'f' )
+                    count_ = 5;
+                else if ( k == 'g' )
+                    count_ = 6;
+                else if ( k == 'h' )
+                    count_ = 7;
+                else if ( k == 'i' )
+                    count_ = 8;
+                else if ( k == 'j' )
+                    count_ = 9;
+                else if ( k == 'k' )
+                    count_ = 10;
+                else if ( k == 'l' )
+                    count_ = 11;
+
+                {
+                    boost::mutex::scoped_lock lock( sensor_mutex_ );
+                    sensor_empty_ = false;
+                }
+                sensor_cond_.notify_one();
                 ori_xtion_rgb_sub_.unsubscribe();
                 ori_xtion_rgb_info_sub_.unsubscribe();
                 ori_xtion_cloud_sub_.unsubscribe();

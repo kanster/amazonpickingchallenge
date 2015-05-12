@@ -387,6 +387,8 @@ bool OfflineRecogniser::target_srv_callback_block(apc_msgs::RecogniseALG::Reques
             while ( !recogniser_done_ ) {
                 recogniser_cond_.wait(lock);
             }
+            for ( int i = 0; i < (int)bin_objs_.items_in_bin.size(); ++ i )
+                resp.items_in_bin.push_back( bin_objs_.items_in_bin[i] );
         }
 
         // assign response variables
@@ -415,14 +417,26 @@ void OfflineRecogniser::process() {
 
         {
             SensorData * data = sensor_data_ptr_;
-            if ( data->xtion_rgb.rows != 0 && data->xtion_rgb.cols != 0 &&
-                 data->xtion_depth.rows != 0 && data->xtion_depth.cols != 0 ) {
+            if ( ( op_mode_ <= 3 && !data->xtion_rgb.empty() && !data->xtion_depth.empty()  ) ||
+                 ( op_mode_ > 3  && !data->xtion_rgb.empty() && !data->xtion_depth.empty() && !data->pg_rgb.empty() ) ) {
                 bin_objs_.items_in_bin.clear();
                 ROS_INFO("Load mask images with index %s", srv_bin_id_.c_str());
 
                 // kernel descriptor recogniser
                 cv::Mat rgb_image = data->xtion_rgb.clone();
                 cv::Mat depth_image = data->xtion_depth.clone();
+
+                std::time_t rawtime;
+                std::tm* timeinfo;
+                char timestr[80];
+
+                std::time(&rawtime);
+                timeinfo = std::localtime(&rawtime);
+
+                std::strftime(timestr, 80, "%Y-%m-%d-%H-%M-%S", timeinfo);
+                std::puts(timestr);
+
+                cv::imwrite( std::string(timestr)+"_input.png", rgb_image );
 
                 switch (op_mode_) {
                 case 1:
@@ -435,7 +449,7 @@ void OfflineRecogniser::process() {
                     kdr_.load_info( empty_image, xtion_rgb_mask, empty_depth_image );
                     kdr_.set_env_configuration( srv_object_name_, srv_bin_contents_ );
                     vector<pair<string, vector<cv::Point> > > results;
-                    kdr_.process( results );
+                    kdr_.patch_process( results );
                     for ( int i = 0; i < (int)results.size(); ++ i ) {
                         apc_msgs::Object obj;
                         obj.name = results[i].first;
@@ -479,7 +493,7 @@ void OfflineRecogniser::process() {
                     kdr_.load_info( empty_image, xtion_rgb_mask, empty_depth_image );
                     kdr_.set_env_configuration( srv_object_name_, srv_bin_contents_ );
                     vector<pair<string, vector<cv::Point> > > kd_results;
-                    kdr_.process( kd_results );
+                    kdr_.patch_process( kd_results );
                     // eblearn recogniser
                     ebr_.load_sensor_data( rgb_image );
                     ebr_.set_env_configuration( srv_object_name_, srv_bin_contents_ );
@@ -512,7 +526,7 @@ void OfflineRecogniser::process() {
                     kdr_.load_info( empty_image, xtion_rgb_mask, empty_depth_image );
                     kdr_.set_env_configuration( srv_object_name_, srv_bin_contents_ );
                     vector<pair<string, vector<cv::Point> > > results;
-                    kdr_.process( results );
+                    kdr_.patch_process( results );
 
                     bin_objs_.bin_id = srv_bin_id_;
                     for ( int i = 0; i < (int)results.size(); ++ i ) {
@@ -527,8 +541,7 @@ void OfflineRecogniser::process() {
                     }
                     vector< pair<string, int> > dup_items = kdr_.get_dup_items();
                     cv::Mat mask_image = kdr_.get_mask_image();
-                    cv::imshow( "sub_image", mask_image );
-                    cv::waitKey(0);
+
                     // remove items that do not have rgb and rgbd methods
                     vector<string>  pose_items;
                     vector<int>     pose_items_n;
@@ -562,7 +575,9 @@ void OfflineRecogniser::process() {
                             list<SP_Object> rgb_objs;
                             bool rgb_reco_done = rgb_reco.run(rgb_objs, rgb_param_, 15, 10, true );
                             if ( rgb_reco_done == true ) {
+                                int idx = 0;
                                 foreach( SP_Object rgb_obj, rgb_objs ) {
+                                    vector<cv::Point> rgb_cvxpts = rgb_reco.get_convex_matches(idx);
                                     // trying retrive the item from results
                                     for ( int res_i = 0; res_i < results.size(); ++ res_i ) {
                                         if ( results[res_i].first == rgb_obj->model_->name_ ) {
@@ -578,8 +593,25 @@ void OfflineRecogniser::process() {
                                             obj.pose.orientation.w = rgb_obj->pose_.q_.w();
 
                                             obj.mean_quality = rgb_obj->score_;
+
+                                            // combine two convex hull
+                                            vector<cv::Point> combpts;
+                                            for ( int ipt = 0; ipt < (int)obj.convex_hull_x.size(); ++ ipt )
+                                                combpts.push_back( cv::Point( obj.convex_hull_x[ipt], obj.convex_hull_y[ipt] ) );
+                                            for ( int irgb = 0; irgb < (int)rgb_cvxpts.size(); ++ irgb )
+                                                combpts.push_back( rgb_cvxpts[irgb] );
+                                            vector<cv::Point> cvx_combpts = get_convex_hull( combpts );
+                                            obj.convex_hull_x.clear();
+                                            obj.convex_hull_y.clear();
+                                            for ( int icvx = 0; icvx < (int)cvx_combpts.size(); ++ icvx ) {
+                                                obj.convex_hull_x.push_back( cvx_combpts[icvx].x );
+                                                obj.convex_hull_y.push_back( cvx_combpts[icvx].y );
+                                            }
+
+
                                         }
                                     }
+                                    idx ++;
                                 }
                             }
                         }
@@ -636,6 +668,7 @@ void OfflineRecogniser::process() {
                         cv::putText( rgb_image, obj.name, cv::Point(minx, miny), CV_FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0, 0, 255), 1 );
                     }
                     cv::imshow( "results", rgb_image );
+                    cv::imwrite( std::string(timestr)+"_output.png", rgb_image );
                     cv::waitKey(1000);
                 }
 

@@ -90,27 +90,10 @@ int KernelDescManager::Classify(VectorXf& scores, const MatrixXf& imfea) {
     MatrixXf svmBias;
     get_matrix(svmBias, this->model_kdes, (model_var+string("->svm->bias")).c_str());
 
-    // cout << "Classify 2\n";
-    /*
-    ofstream outW("w.txt");
-    for ( int y = 0; y < svmW.rows(); ++ y ) {
-        for ( int x = 0; x < svmW.cols(); ++ x ) {
-            outW << svmW(y, x) << " ";
-        }
-        outW << endl;
-    }
-    outW.close();
-    */
-
-//    cout << "imfea: " << imfea_s.rows() << ", " << imfea_s.cols() << endl;
-//    cout << "w: " << this->svmW.rows() << ", " << this->svmW.cols() << endl;
     VectorXf res = ( imfea_s.transpose()*(this->svmW) ).transpose()+svmBias.transpose();
-//    cout << "res: " << res.rows() << ", " << res.cols() << endl;
     scores = res;
-    // cout << "Classify 3\n";
     MatrixXf::Index idx;
     float maxscore = scores.maxCoeff(&idx);
-    // cout << "Classify 4\n";
     return idx;
 }
 
@@ -146,7 +129,6 @@ bool KernelDescManager::Process(MatrixXf&imfea, IplImage* image, const VectorXf&
 }
 
 bool KernelDescManager::Process(MatrixXf&imfea, IplImage* image) {
-
     //========================================================================
     if ( !(MODEL_TYPE==1 || MODEL_TYPE==2) ) {
         printf("MODEL_TYPE %d unsupported.\n",MODEL_TYPE);
@@ -249,15 +231,7 @@ bool KernelDescManager::Process(MatrixXf&imfea, IplImage* image) {
     MatrixXf emkPyramid;
     get_matrix(emkPyramid, this->model_kdes, (string(this->model_var)+"->emk->pyramid").c_str());
 
-//    struct timeval t4;
-//    gettimeofday(&t4, NULL);
-//    long int ms4 = t4.tv_sec * 1000 + t4.tv_usec / 1000; //get current timestamp in milliseconds
-//    cout << "4: " << ms4 << endl;
     CKSVDEMK(imfea, feaArr, feaMag, fgrid_y, fgrid_x, img_h, img_w, emkWords, emkG, emkPyramid, get_value<float>(this->model_kdes, (string(this->model_var)+"->emk->kparam").c_str()) );
-//    struct timeval t5;
-//    gettimeofday(&t5, NULL);
-//    long int ms5 = t5.tv_sec * 1000 + t5.tv_usec / 1000; //get current timestamp in milliseconds
-//    cout << "5: " << ms5 << endl;
 
 
 
