@@ -139,6 +139,11 @@ KDRecogniser::KDRecogniser(){
 }
 
 
+void KDRecogniser::set_flags(bool display) {
+    display_ = display;
+}
+
+
 void KDRecogniser::load_sensor_data(cv::Mat rgb_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud) {
     this->rgb_image_ = rgb_image;
     this->cloud_.reset( new pcl::PointCloud<pcl::PointXYZRGB> () );
@@ -358,8 +363,10 @@ void KDRecogniser::patch_process(vector<pair<string, vector<cv::Point> > > &resu
             }
         }
     }
-    cv::imshow( "blob_rgb", blob_rgb );
-    cv::waitKey( 1000 );
+    if ( display_ ) {
+        cv::imshow( "blob_rgb", blob_rgb );
+        cv::waitKey( 500 );
+    }
 
     if ( blob_bbox.empty() )
         return;
@@ -422,35 +429,36 @@ void KDRecogniser::patch_process(vector<pair<string, vector<cv::Point> > > &resu
     cout << "Execution time: " << setw(8) << exec_time << endl;
 
     // generate sq values
-    cout << "\n------------------------\n";
-    for ( int i = 0; i < (int)scores_all.size(); ++ i )
-        for ( int oi = 0; oi < (int)scores_all[i].size(); ++ oi )
-            cout << dup_items_[oi].first << ": \n" << scores_all[i][oi] << /*" sum = " << scores_all[i][oi].sum() << */"\n";
-    cout << "\n------------------------\n";
-    if ( dup_items_.size() != 1 ) {
-        for ( int i = 0; i < (int)scores_all.size(); ++ i ) {
-            int ny = scores_all[i].front().rows();
-            int nx = scores_all[i].front().cols();
-            int no = scores_all[i].size();
-            for ( int y = 0; y < ny; ++ y ) {
-                for ( int x = 0; x < nx; ++ x ) {
-                    float sq = 0.;
-                    for ( int oi = 0; oi < no; ++ oi )
-                        sq += scores_all[i][oi](y, x)*scores_all[i][oi](y, x);
-                    sq = sqrt(sq);
-                    for ( int oi = 0; oi < no; ++ oi )
-                        scores_all[i][oi](y,x) /= sq;
+    if ( display_ == true ) {
+        cout << "\n------------------------\n";
+        for ( int i = 0; i < (int)scores_all.size(); ++ i )
+            for ( int oi = 0; oi < (int)scores_all[i].size(); ++ oi )
+                cout << dup_items_[oi].first << ": \n" << scores_all[i][oi] << "\n";
+        cout << "\n------------------------\n";
+
+        if ( dup_items_.size() != 1 ) {
+            for ( int i = 0; i < (int)scores_all.size(); ++ i ) {
+                int ny = scores_all[i].front().rows();
+                int nx = scores_all[i].front().cols();
+                int no = scores_all[i].size();
+                for ( int y = 0; y < ny; ++ y ) {
+                    for ( int x = 0; x < nx; ++ x ) {
+                        float sq = 0.;
+                        for ( int oi = 0; oi < no; ++ oi )
+                            sq += scores_all[i][oi](y, x)*scores_all[i][oi](y, x);
+                        sq = sqrt(sq);
+                        for ( int oi = 0; oi < no; ++ oi )
+                            scores_all[i][oi](y,x) /= sq;
+                    }
                 }
             }
         }
+        for ( int i = 0; i < (int)scores_all.size(); ++ i )
+            for ( int oi = 0; oi < (int)scores_all[i].size(); ++ oi ){
+                cout << dup_items_[oi].first << ": \n" << scores_all[i][oi] << "\n";
+            }
+        cout << "\n------------------------\n";
     }
-    for ( int i = 0; i < (int)scores_all.size(); ++ i )
-        for ( int oi = 0; oi < (int)scores_all[i].size(); ++ oi ){
-            cout << dup_items_[oi].first << ": \n" << scores_all[i][oi] << /*"  sum = " << scores_all[i][oi].sum() << */"\n";
-        }
-
-
-    cout << "\n------------------------\n";
 
     // analysis based on item number
     if ( target_bin_content_.size() == 1 ){
@@ -464,7 +472,6 @@ void KDRecogniser::patch_process(vector<pair<string, vector<cv::Point> > > &resu
             pts.push_back( pt );
             maxs.push_back( max );
         }
-        cout << "-\n";
 
         float max = -100.;
         int max_idx;
@@ -474,21 +481,16 @@ void KDRecogniser::patch_process(vector<pair<string, vector<cv::Point> > > &resu
                 max_idx = i;
             }
         }
-        cout << "-\n";
         cv::Mat detect_rect( rgb_image_.rows, rgb_image_.cols, CV_8UC1, cv::Scalar(0) );
 
         if ( scores_all[max_idx][0].rows() != 1 || scores_all[max_idx][0].cols() != 1 ) {
-            cout << "-\n";
             cv::Point tlpt;
             tlpt.x = blob_bbox[max_idx].first.x + pts[max_idx].x*step_size;
             tlpt.y = blob_bbox[max_idx].first.y + pts[max_idx].y*step_size;
             cv::rectangle( detect_rect, cv::Rect(tlpt.x, tlpt.y, patch_size, patch_size), cv::Scalar(255), CV_FILLED );
-            cout << "-\n";
         }
         else {
-            cout << "*\n";
             cv::rectangle( detect_rect, cv::Rect(blob_bbox[max_idx].first.x, blob_bbox[max_idx].first.y, blob_bbox[max_idx].second.x-blob_bbox[max_idx].first.x, blob_bbox[max_idx].second.y-blob_bbox[max_idx].first.y), cv::Scalar(255), CV_FILLED );
-            cout << "*\n";
         }
         cv::bitwise_and( mask_image_, detect_rect, detect_rect );
         // get contour
@@ -574,6 +576,8 @@ void KDRecogniser::patch_process(vector<pair<string, vector<cv::Point> > > &resu
 
                 vector< pair<cv::Point2i, int> > indices;// the minimum value in the window is less than thresh
 
+//                vector<int> count_per_obj( scores_all[i].size(), 0 );
+//                vector< vector<cv::Point2i> > count_indices( scores_all[i].size() );
                 for ( int y = 0; y < ny; ++ y ) {
                     for ( int x = 0; x < nx; ++ x ) {
                         float minval = 10.;
@@ -591,11 +595,27 @@ void KDRecogniser::patch_process(vector<pair<string, vector<cv::Point> > > &resu
                                 maxidx = oi;
                             }
                         }
+
+//                        count_indices[maxidx].push_back( cv::Point2i(x, y) );
+//                        count_per_obj[maxidx] ++;
+
                         if ( minval < thresh_val || maxval > 0.0 ) {
                             indices.push_back( make_pair(cv::Point2i(x, y), minidx) );
                         }
                     }
                 }
+
+//                indices.clear();
+//                int maxcount_pos = std::distance( count_per_obj.begin(), std::max_element( count_per_obj.begin(), count_per_obj.end() ) );
+//                for ( int ic = 0; ic < count_indices[maxcount_pos].size(); ++ ic ) {
+//                    indices.push_back( make_pair( count_indices[maxcount_pos][ic], maxcount_pos) );
+//                }
+
+//                if ( display_ == true ) {
+//                    for ( int ic = 0; ic < count_per_obj.size(); ++ ic )
+//                        cout << dup_items_[ic].first << ": " << count_per_obj[ic] << endl;
+//                    cout << "\n-------------------------------\n";
+//                }
 
                 if ( !indices.empty() ) {
                     vector< vector<cv::Point> > indices_per_obj( dup_items_.size() );

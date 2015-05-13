@@ -109,6 +109,9 @@ OfflineRecogniser::OfflineRecogniser(ros::NodeHandle &nh)
     string model_folder = string(kd_dir_);
     string model = "RGB Kernel Descriptor";
     unsigned int model_type = 2;
+    bool kdr_display;
+    nh_->param<bool>("use_kd_display", kdr_display, true);
+    kdr_.set_flags( kdr_display );
     kdr_.init_libkdes( svm_model_name, kdes_model_name, model_folder, model, model_type );
     ROS_INFO( "Initializing kernel descriptor recogniser" );
 
@@ -667,9 +670,9 @@ void OfflineRecogniser::process() {
                         }
                         cv::putText( rgb_image, obj.name, cv::Point(minx, miny), CV_FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0, 0, 255), 1 );
                     }
-                    cv::imshow( "results", rgb_image );
+//                    cv::imshow( "results", rgb_image );
+//                    cv::waitKey(1000);
                     cv::imwrite( std::string(timestr)+"_output.png", rgb_image );
-                    cv::waitKey(1000);
                 }
 
 

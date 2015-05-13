@@ -29,7 +29,7 @@
     <!-- op_mode_ = 3, kernel descriptor + eblearn -->
     <!-- op_mode_ = 4, kernel descriptor + rgb/rgbd -->
     <!-- op_mode_ = 5, kernel descriptor + eblearn + optional rgb/rgbd -->
-    <param name="op_mode" type="int" value="4"/>
+    <param name="op_mode" type="int" value="1"/>
 
     <!-- service mode -->
     <!-- srv_mode_ = 1, non-blocking mode -->
@@ -44,6 +44,9 @@
     <param name="pg_rgb_image" type="str" value="/camera/highres_rgb/image"/>
     <param name="pg_rgb_info" type="str" value="/camera/highres_rgb/camera_info"/>
     <param name="xtion_points" type="str" value="/camera/points"/>
+
+    <!-- parameters for kd recogniser -->
+    <param name="use_kd_display" type="bool" value="true"/>
 
     <!-- parameter for rgb recogniser -->
     <!-- detector -->

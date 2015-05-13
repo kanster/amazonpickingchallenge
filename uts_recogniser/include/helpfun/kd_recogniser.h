@@ -70,8 +70,7 @@ private:
 
     //! sliding box settings
     int step_size_;
-    int
-    bbox_size_;
+    int bbox_size_;
 
     //! subtracted image
     cv::Mat sub_image_;
@@ -81,13 +80,18 @@ private:
 
     KernelDescManager * kdes_;
 
+    //! print scores
+    bool display_;
+
     bool find_blobs( const cv::Mat & binary, vector< vector<cv::Point2i> > & blobs );
 
     cv::Mat from_score( MatrixXf score, int scale );
 
 
 public:
-    KDRecogniser();
+    KDRecogniser(  );
+
+    void set_flags( bool display = true );
 
     void load_sensor_data(cv::Mat rgb_image, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
 
