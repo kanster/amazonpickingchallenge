@@ -98,7 +98,7 @@ template <typename T> void EBRecogniser::init_detector(ebl::detector<T> & detect
     }
     if (conf.exists("outputs_threshold"))
         detect.set_outputs_threshold(conf.get_double("outputs_threshold"), conf.try_get_double("outputs_threshold_val", -1));
-    ///////////////////////////////////////////////////////////////////////////
+
     if (conf.exists("netdims")) {
         ebl::idxdim d = ebl::string_to_idxdim(conf.get_string("netdims"));
         detect.set_netdim(d);
@@ -147,7 +147,10 @@ EBRecogniser::EBRecogniser(){
 }
 
 
+// init ALL configuration files
+// parameters are manually selected during train phase
 void EBRecogniser::init(string tmp_conf_path, string mat_dir) {
+
     // generate ebparam map
     const std::string item_names_arr[] = { "oreo_mega_stuf", "crayola_64_ct", "cheezit_big_original", "first_years_take_and_toss_straw_cup", "dr_browns_bottle_brush",
                                            "champion_copper_plus_spark_plug", "mommys_helper_outlet_plugs", "paper_mate_12_count_mirado_black_warrior", "highland_6539_self_stick_notes", "kong_duck_dog_toy",
@@ -270,7 +273,7 @@ void EBRecogniser::set_conf_dir(std::string conf_dir) {
     conf_dir_ = conf_dir;
 }
 
-
+// main function, results save the bounding boxes of the detected object
 void EBRecogniser::process( std::vector< std::pair<std::string, std::vector<cv::Point> > > & results, bool use_rgb ) {
     results.clear();
     std::vector< std::pair<std::string, int> > objects_n = duplicated_bin_contents( items_ );

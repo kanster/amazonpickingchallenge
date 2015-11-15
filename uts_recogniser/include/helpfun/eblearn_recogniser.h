@@ -1,6 +1,11 @@
 #ifndef EBLEARN_RECOGNISER_H
 #define EBLEARN_RECOGNISER_H
 
+// Object classification using [EBlearn](http://eblearn.sourceforge.net/)
+// under ROS environment
+// models need to be trained and EBlearn needs to be installed.
+// Check CMakeLists to find the EBLearn package
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <map>
@@ -32,6 +37,7 @@
 
 class EBRecogniser{
 private:
+    // Eblearn parametrisation
     struct EBParam{
         double max_scale;
         double min_scale;
@@ -64,34 +70,42 @@ private:
 
 
 private:
+    // init object detector
     template <typename T> void init_detector( ebl::detector<T> & detect, ebl::configuration & conf, std::string & outdir, bool silent );
 
+    // convert cv::Mat to frame(eblearn image)
     void set_frame();
 
+    // template for configure file
+    // the parameters for different objects will be set manually
     void load_temp_conf( std::string conf_path );
 
+    // pretrained mat file directories including class and label
     void set_mat_dir( std::string mat_dir );
 
 
 private:
+    // detector
     ebl::detector<float> * pdetect_;
 
+    // input images
     cv::Mat rgb_image_, depth_image_;
     cv::Mat empty_image_, empty_depth_image_;
     cv::Mat mask_image_;
 
+    // ebl image
     ebl::idx<float> frame_;
 
-    std::string target_item_;
-    std::vector<std::string> items_;
+    std::string target_item_;         // target in the bin
+    std::vector<std::string> items_;  // objects in the bin
 
-    std::string conf_dir_;
-    std::string mat_dir_;
+    std::string conf_dir_;            // configuration files directory
+    std::string mat_dir_;             // models directory
 
     bool use_rgb_;
 
-    ebl::configuration conf_;
-    std::map<std::string, EBParam> item_params_map_;
+    ebl::configuration conf_;         // configure file
+    std::map<std::string, EBParam> item_params_map_;  // param map
 
 public:
     EBRecogniser();
